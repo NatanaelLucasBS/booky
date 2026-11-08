@@ -1,31 +1,32 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
-import 'package:todo_app_architecture/core/di/ConfigureProviders.dart';
-import 'package:provider/provider.dart';
-import 'package:todo_app_architecture/ui/todo/TodoView.dart';
+import 'core/constants/app_constants.dart';
+import 'core/routes/app_routes.dart';
+import 'core/theme/app_theme.dart';
+import 'core/theme/theme_controller.dart';
 
-Future<void> main() async {
-
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-
-  final data = await ConfigureProviders.createDependencyTree();
-
-  runApp(
-      MultiProvider(
-          providers: data.providers,
-          child: const MyApp()),
-  );
+  runApp(const BookyApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class BookyApp extends StatelessWidget {
+  const BookyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Arquitetura Flutter',
-      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.indigo),
-      home: const TodoView(),
+    return AnimatedBuilder(
+      animation: themeController,
+      builder: (context, _) {
+        return MaterialApp(
+          title: AppConstants.appName,
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeController.themeMode,
+          initialRoute: AppRoutes.initial,
+          routes: AppRoutes.routes,
+        );
+      },
     );
   }
 }
