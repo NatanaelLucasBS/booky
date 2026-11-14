@@ -1,19 +1,20 @@
 # Roadmap e Issues — CLEITON (APIs, Scanner, Biblioteca, Rastreador, Home/Gráficos & Detalhes/OCR)
 
 > **Leia primeiro:** [`PLANO_DESENVOLVIMENTO.md`](./PLANO_DESENVOLVIMENTO.md)  
-> **Seu Domínio:** Todas as funcionalidades de leitura do usuário: **Catalogação (`library` + Google Books/Open Library + Scanner ISBN)**, **Rastreador (`tracker` + Cronômetro + Estimativa)**, **Dashboard (`home` + Gráficos `fl_chart`)** e **Detalhes do Livro (`book_details` + Empréstimos + Citações/Resenha + OCR)**.
+> **Seu Domínio:** Todas as funcionalidades de leitura do Tema 6: **Catalogação (`library` + Google Books/Open Library + Scanner ISBN)**, **Rastreador (`tracker` + Cronômetro + Estimativa)**, **Dashboard (`home` + Gráficos `fl_chart`)** e **Detalhes do Livro (`book_details` + Empréstimos + Citações/Resenha + OCR)**.
 
 ---
 
-## Como o Banco Funciona (Leia Antes de Programar ou Usar IA)
+## Como a Camada de Dados Funciona (Leia Antes de Programar ou Usar IA)
 
-1. **Você NÃO precisa configurar Firebase, Firestore ou Auth!** O Natanael cuida de 100% do banco de dados (Cloud Firestore com cache offline automático) e autenticação.
+1. **Persistência 100% Abstraída:** Você **não** precisa configurar banco de dados! O Natanael fornece os 7 `Repositories` prontos na camada de dados com persistência abstraída.
 2. **Como suas telas leem e gravam dados (seguindo `Aula_24_-_Arqutietura_Recomendada.pdf`):**
-   - **Views (`Screens` / `Widgets`):** nunca acessam `Service` ou Firebase e nunca contêm regra de negócio. Apenas observam o ViewModel (`context.watch<MeuViewModel>()`) e disparam comandos (`context.read<MeuViewModel>()`).
-   - **ViewModels (`ChangeNotifier`, 1:1 por tela):** consomem os **Repositories** criados pelo Natanael (`BookRepository`, `ShelfRepository`, `SessionRepository`, `NoteRepository`, `LoanRepository`, `UserProfileRepository`) ou **UseCases** (`lib/domain/use_cases/`).
-   - **SSOT Reativo:** Os repositórios já retornam `Stream<List<...>>` ligados ao Firestore (que funciona inclusive offline!). Qualquer alteração feita em `BookDetails` ou `Tracker` atualiza automaticamente `Library` e `Home`.
-3. **Nunca edite pastas do Natanael:** Não altere `lib/data/repositories/**`, `lib/data/services/{auth,firestore,export,notification}_service.dart`, `lib/features/auth/**`, `lib/features/profile/**`, `android/` nem `pubspec.yaml` sem alinhar via PR.
-4. **Como trabalhar sem esperar o Firebase na Sprint 1:** Assim que Natanael concluir `ISSUE-N01` e `ISSUE-N02` (pacotes + modelos + interfaces), você já trabalha livremente criando `BookApiService`, `OcrService` e seus ViewModels/UseCases usando os contratos oficiais da **Seção 4 do `PLANO_DESENVOLVIMENTO.md`** (e fakes em memória nos testes).
+   - **Views (`Screens` / `Widgets` — Slides 6, 15, 16):** nunca acessam `Service` ou banco de dados e nunca contêm regra de negócio. Apenas observam o ViewModel (`context.watch<MeuViewModel>()`) e disparam comandos (`context.read<MeuViewModel>()`).
+   - **ViewModels (`ChangeNotifier`, relação 1:1 por tela — Slides 15, 18):** consomem os **Repositories** criados pelo Natanael (`BookRepository`, `ShelfRepository`, `SessionRepository`, `NoteRepository`, `LoanRepository`, `UserProfileRepository`) ou **UseCases** (`lib/domain/use_cases/`).
+   - **UseCases (Camada de Domínio — Slides 7, 23, 27):** como um `Repository` **nunca** pode depender de outro `Repository` (Slide 23), sempre que uma ação precisar coordenar mais de um repositório ou serviço (ex.: salvar sessão e atualizar o livro; registrar empréstimo e agendar notificação; consolidar estatísticas da Home), usamos um `UseCase` em `lib/domain/use_cases/`.
+   - **SSOT Reativo (Slides 4, 22):** Os repositórios já retornam `Stream<List<...>>` como Fonte Única de Verdade. Qualquer alteração feita em `BookDetails` ou `Tracker` atualiza automaticamente `Library` e `Home`.
+3. **Nunca edite pastas do Natanael:** Não altere `lib/data/repositories/**`, `lib/data/services/{storage,backup_sync,export,notification}_service.dart`, `lib/features/auth/**`, `lib/features/profile/**`, `android/` nem `pubspec.yaml` sem alinhar via PR.
+4. **Como trabalhar em paralelo na Sprint 1:** Assim que Natanael concluir `ISSUE-N01` e `ISSUE-N02` (pacotes + modelos + interfaces), você já trabalha livremente criando `BookApiService`, `OcrService` e seus ViewModels/UseCases usando os contratos oficiais da **Seção 4 do `PLANO_DESENVOLVIMENTO.md`** (e fakes em memória nos testes).
 
 ---
 
@@ -34,7 +35,7 @@
     - `GET https://openlibrary.org/api/books?bibkeys=ISBN:{isbn}&jscmd=data&format=json` (e `/isbn/{isbn}.json` / `/works/...` caso necessário para sinopse) preenchendo os campos faltantes.
   - [ ] Permitir injetar `http.Client` no construtor (`BookApiService({http.Client? client})`) para viabilizar testes unitários na Sprint 4.
   - [ ] Tratar falha de rede/timeout com exceção amigável para o ViewModel exibir.
-- **Critérios de Aceite:** Service *stateless*; ISBN válido preenche os campos; ISBN inexistente retorna `null`; offline lança erro tratado sem crash.
+- **Critérios de Aceite:** Service *stateless* (Slide 25 da `Aula_24`); ISBN válido preenche os campos; ISBN inexistente retorna `null`; offline lança erro tratado sem crash.
 
 ---
 
@@ -49,8 +50,8 @@
     - Abre câmera ou galeria (`pickImage`). Se cancelar, retorna `null`.
     - Executa `processImage(InputImage.fromFilePath(xfile.path))`.
     - Normaliza espaços excessivos mantendo o texto legível.
-    - **Regra de armazenamento (custo zero):** Deletar o arquivo temporário da foto após extrair o texto (`File(xfile.path).delete()`) e chamar `close()` no `TextRecognizer`.
-- **Critérios de Aceite:** Fotografar uma página física retorna o texto em português 100% offline sem deixar imagens residuais no aparelho.
+    - Deletar o arquivo temporário da foto após extrair o texto (`File(xfile.path).delete()`) e chamar `close()` no `TextRecognizer`.
+- **Critérios de Aceite:** Fotografar uma página física retorna o texto em português 100% no dispositivo sem deixar imagens residuais.
 
 ---
 
@@ -58,13 +59,13 @@
 
 ### `ISSUE-C03` — `AddBookViewModel` + `AddBookScreen` (Scanner ISBN + Cadastro/Edição Completa)
 - **Branch:** `feat/c03-add-book-scanner`
-- **Depende de:** `ISSUE-C01`, `ISSUE-N05`, `ISSUE-N06`
+- **Depende de:** `ISSUE-C01`, `ISSUE-N04`, `ISSUE-N05`
 - **Arquivos a criar/editar:**
   - `lib/features/library/presentation/viewmodels/add_book_viewmodel.dart`
   - `lib/features/library/presentation/screens/add_book_screen.dart`
 - **Checklist Técnico:**
   - [ ] Criar `AddBookViewModel extends ChangeNotifier` (relação 1:1 com `AddBookScreen`) consumindo `BookRepository`, `ShelfRepository` e `BookApiService`.
-  - [ ] Corrigir os chips de status em `add_book_screen.dart`: substituir `'Emprestado'` por **`Abandonado`** (os 4 status oficiais são: `Quero Ler`, `Lendo`, `Lido`, `Abandonado` — *Emprestado não é status!*).
+  - [ ] Corrigir os chips de status em `add_book_screen.dart`: substituir `'Emprestado'` por **`Abandonado`** (os 4 status oficiais do Tema 6 são: `Quero Ler`, `Lendo`, `Lido`, `Abandonado` — *Emprestado não é status!*).
   - [ ] Integrar câmera real na aba **ESCANEAR CÓDIGO** usando `mobile_scanner`:
     - Manter a moldura editorial já desenhada na tela.
     - **Trava/debounce de leitura:** ao capturar um ISBN válido, pausar o scanner, chamar `AddBookViewModel.lookupByIsbn(isbn)` com feedback de carregamento e mudar automaticamente para a aba **CADASTRO MANUAL** com o formulário preenchido.
@@ -76,13 +77,13 @@
     - Seletor de **Status** (4 opções) + seleção/criação de **Estantes Temáticas** (`ShelfRepository`) + chips de **Tags customizadas**.
   - [ ] Suportar **Modo Edição** quando receber `BookModel? bookToEdit` pela rota `AppRoutes.addBook`.
   - [ ] Ao salvar: gerar UUID caso seja novo livro; preencher `startedAt` se status for `reading`; preencher `finishedAt` e `currentPage = totalPages` se status for `read`.
-- **Critérios de Aceite:** Escanear código de barras (ou digitar ISBN) preenche todos os campos via API, permite revisar e salva no Firestore via `BookRepository`.
+- **Critérios de Aceite:** Escanear código de barras (ou digitar ISBN) preenche todos os campos via API, permite revisar e salva no `BookRepository`.
 
 ---
 
 ### `ISSUE-C04` — `LibraryViewModel` + `LibraryScreen` (Estantes, Tags, Badges de Empréstimo & Busca Avançada)
 - **Branch:** `feat/c04-library-advanced-search`
-- **Depende de:** `ISSUE-N05`, `ISSUE-N06`
+- **Depende de:** `ISSUE-N04`, `ISSUE-N05`
 - **Arquivos a criar/editar:**
   - `lib/features/library/presentation/viewmodels/library_viewmodel.dart`
   - `lib/features/library/presentation/screens/library_screen.dart`
@@ -98,13 +99,13 @@
     - `EMPRESTADO` (empréstimo ativo no prazo)
     - `ATRASADO` com destaque visual (quando `loan.isOverdue == true`)
   - [ ] Ao tocar em um livro, navegar para `AppRoutes.bookDetails` passando `arguments: book.id`.
-- **Critérios de Aceite:** Busca avançada combina múltiplos critérios sem travar offline; badges de emprestado/atrasado refletem o estado real dos empréstimos.
+- **Critérios de Aceite:** Busca avançada combina múltiplos critérios; badges de emprestado/atrasado refletem o estado real dos empréstimos.
 
 ---
 
 ### `ISSUE-C05` — UseCases de Empréstimo + `BookDetailsViewModel` & `BookDetailsScreen` (Diário, OCR & Empréstimos)
 - **Branch:** `feat/c05-book-details-loans-ocr`
-- **Depende de:** `ISSUE-C02`, `ISSUE-N05`, `ISSUE-N06`, `ISSUE-N07`
+- **Depende de:** `ISSUE-C02`, `ISSUE-N04`, `ISSUE-N05`, `ISSUE-N06`
 - **Arquivos a criar/editar:**
   - `lib/domain/use_cases/register_loan_use_case.dart`
   - `lib/domain/use_cases/return_loan_use_case.dart`
@@ -114,7 +115,7 @@
   - `lib/features/book_details/presentation/widgets/note_editor_dialog.dart`
 - **Checklist Técnico:**
   - [ ] **`RegisterLoanUseCase`**:
-    - Recebe `LoanRepository` e `NotificationService` (criado pelo Natanael na `ISSUE-N07`).
+    - Recebe `LoanRepository` e `NotificationService` (criado pelo Natanael na `ISSUE-N06`).
     - Valida se já não existe empréstimo ativo (`!isReturned`) para o `bookId` e se `expectedReturnDate >= loanDate`.
     - Cria `LoanModel` com UUID + `notificationId` determinístico (`id.hashCode.abs() & 0x7FFFFFFF`), salva no `LoanRepository` e agenda lembrete em `NotificationService.scheduleLoanReturnReminder(...)`.
   - [ ] **`ReturnLoanUseCase`**:
@@ -136,13 +137,13 @@
 
 ### `ISSUE-C06` — `SaveReadingSessionUseCase`, `TrackerViewModel` & `ReadingTrackerScreen`
 - **Branch:** `feat/c06-reading-tracker`
-- **Depende de:** `ISSUE-N05`, `ISSUE-N06`
+- **Depende de:** `ISSUE-N04`, `ISSUE-N05`
 - **Arquivos a criar/editar:**
   - `lib/domain/use_cases/save_reading_session_use_case.dart`
   - `lib/features/tracker/presentation/viewmodels/tracker_viewmodel.dart`
   - `lib/features/tracker/presentation/screens/reading_tracker_screen.dart`
 - **Checklist Técnico:**
-  - [ ] **`SaveReadingSessionUseCase`** (combina `SessionRepository` + `BookRepository` sem acoplar repositórios):
+  - [ ] **`SaveReadingSessionUseCase`** (combina `SessionRepository` + `BookRepository` sem acoplar repositórios — Slide 23 e 27):
     - Recebe `book`, `startTime`, `durationSeconds`, `startPage`, `endPage`.
     - Calcula `pagesRead = max(0, endPage - startPage)` e `dateKey = YYYY-MM-DD`.
     - Grava `ReadingSessionModel` no `SessionRepository`.
@@ -160,7 +161,7 @@
 
 ### `ISSUE-C07` — `GetDashboardStatsUseCase`, `HomeViewModel` & `HomeScreen` (`fl_chart`)
 - **Branch:** `feat/c07-home-dashboard-charts`
-- **Depende de:** `ISSUE-N05`, `ISSUE-N06`, `ISSUE-C06`
+- **Depende de:** `ISSUE-N04`, `ISSUE-N05`, `ISSUE-C06`
 - **Arquivos a criar/editar:**
   - `lib/domain/use_cases/get_dashboard_stats_use_case.dart`
   - `lib/features/home/presentation/viewmodels/home_viewmodel.dart`
@@ -185,7 +186,7 @@
 
 ---
 
-## Sprint 4 — Testes Unitários, Auditoria Visual & Validação Offline
+## Sprint 4 — Testes Unitários, Auditoria Visual & Validação E2E
 
 ### `ISSUE-C08` — Testes Unitários de API, Busca Avançada, Rastreador, Dashboard & Empréstimos
 - **Branch:** `test/c08-unit-tests-cleiton`
@@ -207,10 +208,9 @@
 
 ---
 
-### `ISSUE-C09` — Auditoria Visual (Light/Dark Mode) e Teste Offline-First E2E
+### `ISSUE-C09` — Auditoria Visual (Light/Dark Mode) e Teste E2E Offline/Online
 - **Branch:** `fix/c09-ui-offline-audit`
 - **Checklist Técnico:**
   - [ ] Validar `HomeScreen`, `LibraryScreen`, `AddBookScreen`, `BookDetailsScreen` e `ReadingTrackerScreen` em **Modo Claro** e **Modo Escuro** respeitando `AppColors`.
-  - [ ] Testar fluxo completo em **Modo Avião** (após login inicial): cadastrar livro manual, criar estante/tag, rodar sessão no Tracker, extrair citação via OCR, registrar empréstimo; religar internet e verificar sincronização no Firestore.
+  - [ ] Testar fluxo completo com e sem internet: cadastrar livro (ISBN via API e manual), criar estante/tag, rodar sessão no Tracker, extrair citação via OCR e registrar/devolver empréstimo.
   - [ ] Confirmar `flutter analyze` e `flutter test` passando 100%.
-
