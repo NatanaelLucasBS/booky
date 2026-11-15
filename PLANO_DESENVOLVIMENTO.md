@@ -4,6 +4,8 @@
 > **Professor:** Taniro Chacon Rodrigues  
 > **Tema:** 6. App de Biblioteca Pessoal e Rastreamento de Leitura  
 > **Equipe:** Natanael (`Natanael`) & Cleiton (`Cleiton`)  
+> **Arquitetura Base:** MVVM com Provider (Flutter Official Architecture)  
+> **Abordagem de Dados:** 100% Offline-First (SQLite / Storage Local, sem autenticação/nuvem)  
 > **Referências Obrigatórias da Disciplina:**
 > - [`Aula_24_-_Arqutietura_Recomendada.pdf`](./Aula_24_-_Arqutietura_Recomendada.pdf) (MVVM + UDF + SSOT + Layered Architecture)
 > - [`Novo_-_Temas_para_o_projeto_da_disciplina_de_Programao_para_Dispositivos_Mvei.pdf`](./Novo_-_Temas_para_o_projeto_da_disciplina_de_Programao_para_Dispositivos_Mvei.pdf) (Tema 6 — Página 7)
@@ -11,16 +13,26 @@
 
 ---
 
+> [!IMPORTANT]
+> ### DIRETRIZ OBRIGATÓRIA DE IMPLEMENTAÇÃO
+> **Todas as tarefas descritas neste plano de desenvolvimento devem ser implementadas em estrita conformidade com os dois documentos de referência oficiais da disciplina:**
+> 1. **`Aula_24_-_Arqutietura_Recomendada.pdf`** (Arquitetura sugerida pelo time Flutter, padrão MVVM, camadas UI/Data, UDF, SSOT e regras de View/ViewModel/Repository/Service);
+> 2. **`Novo_-_Temas_para_o_projeto_da_disciplina_de_Programao_para_Dispositivos_Mvei.pdf`** (Tema 6 — Requisitos funcionais, regras de negócio e critérios de avaliação).
+>
+> Nenhum código deve desviar desses princípios arquiteturais ou omitir os comportamentos especificados nos PDFs.
+
+---
+
 ## 1. Documentos do Plano
 
-Este repositório possui **4 documentos de referência** que governam todo o desenvolvimento:
+Este repositório possui documentos de referência que governam todo o desenvolvimento:
 
-1. **[`PLANO_DESENVOLVIMENTO.md`](./PLANO_DESENVOLVIMENTO.md)** *(este arquivo)* — Documento mestre com os requisitos do Tema 6, arquitetura recomendada na `Aula_24`, contratos canônicos de domínio/repositórios (com persistência abstraída) e roadmap geral.
-2. **[`TASKS_NATANAEL.md`](./TASKS_NATANAEL.md)** — Backlog estrito do **Natanael** (Setup Android/`pubspec.yaml`, Modelos/Contratos, Services e Repositories de Persistência/Backup/Sessão, DI `ConfigureProviders`/Rotas, Notificações Locais, Exportação PDF/CSV e Perfil/Acesso).
+1. **[`PLANO_DESENVOLVIMENTO.md`](./PLANO_DESENVOLVIMENTO.md)** *(este arquivo)* — Documento mestre com os requisitos do Tema 6, arquitetura recomendada na `Aula_24`, contratos canônicos de domínio/repositórios (com persistência local abstraída) e roadmap geral.
+2. **[`TASKS_NATANAEL.md`](./TASKS_NATANAEL.md)** — Backlog estrito do **Natanael** (Setup Android/`pubspec.yaml`, Modelos/Contratos, Services e Repositories de Persistência, DI `ConfigureProviders`/Rotas, Notificações Locais e Exportação PDF/CSV).
 3. **[`TASKS_CLEITON.md`](./TASKS_CLEITON.md)** — Backlog estrito do **Cleiton** (API Google Books/Open Library, Scanner ISBN, Biblioteca/Estantes/Busca Avançada, Rastreador/Cronômetro, Dashboard/Gráficos `fl_chart`, Ficha do Livro/Empréstimos/Diário/OCR).
 4. **[`README.md`](./README.md)** — Visão geral do projeto, arquitetura e instruções de execução.
 
-> **REGRA PARA IAs E DESENVOLVEDORES:** Antes de criar ou alterar qualquer arquivo, consulte os contratos da Seção 4 e a Matriz de Propriedade da Seção 3. **Nunca** renomeie campos, rotas ou interfaces sem atualizar este documento primeiro. A camada de persistência é **abstraída** atrás de interfaces de `Repository` e `Service` (zero acoplamento com provedor específico de banco de dados na UI, nos ViewModels ou no Domínio).
+> **REGRA PARA IAs E DESENVOLVEDORES:** Antes de criar ou alterar qualquer arquivo, consulte os contratos da Seção 4 e a Matriz de Propriedade da Seção 3. **Nunca** renomeie campos, rotas ou interfaces sem atualizar este documento primeiro. O aplicativo é **100% local e offline** (sem login, sem perfil e sem Firebase).
 
 ---
 
@@ -117,34 +129,35 @@ Conforme especificado no documento oficial da disciplina (**Tema 6 — App de Bi
   - Busca textual instantânea por `title` ou `author` + chips rápidos (`Todos`, `Quero Ler`, `Lendo`, `Lido`, `Abandonado`, `Emprestados`, `Atrasados`).
   - Modal de **Filtros Combinados (`AND`)**: `author`, `genre`, `publishedYear`, `status`, `minRating` (`1..5`), `shelfId` e `tag`, com contador de filtros ativos e botão *Limpar*.
   - A filtragem combinada ocorre de forma reativa no `LibraryViewModel` sobre os modelos de domínio fornecidos pelo `BookRepository`, `LoanRepository` e `ShelfRepository`.
-- **Estatísticas (`HomeScreen` com `fl_chart`):**
-  - **Meta Anual:** `livros concluídos no ano corrente / annualReadingGoal` (ano dinâmico `DateTime.now().year` — corrigindo `"2024"` hardcoded no protótipo).
+- **Estatísticas & Meta Anual (`HomeScreen` com `fl_chart`):**
+  - **Meta Anual:** `livros concluídos no ano corrente / annualReadingGoal` (ano dinâmico `DateTime.now().year`). A meta anual pode ser editada diretamente no Dashboard / Home através de um diálogo rápido (`EditGoalDialog`).
   - **Gráficos mensais (ano selecionado/atual):**
     1. Barras de **Livros lidos por mês** (agrupados por `finishedAt`).
     2. Barras/linha de **Páginas lidas por mês** (soma de `pagesRead` de `sessions` agrupados por `dateKey`).
 
-### RF7 — Persistência Abstraída, Backup/Sincronização e Exportação (PDF e CSV)
+### RF7 — Persistência Local, Backup Local e Exportação (PDF e CSV)
 > *Requisito do Tema 6:* Sincronização em nuvem entre dispositivos e exportação do catálogo completo ou lista de desejos em PDF e CSV.
+> *(Adaptado para escopo 100% offline: persistência e exportação portável local sem nuvem/Firebase)*
 
-- **Abstração Total da Persistência e Sincronização (`Aula_24` Slides 4, 8, 20–26):**
-  - Seguindo o princípio de **Extensibilidade e Testabilidade** (Slide 4) e a separação entre **Repositories** e **Services** (Slides 8, 22, 25), nem a UI, nem os ViewModels, nem os UseCases conhecem qual tecnologia de banco local ou remoto é utilizada.
-  - Os `Repositories` consomem um `StorageService` (armazenamento local/primário) e, para backup/sincronização entre dispositivos, um `BackupSyncService` (capaz de exportar/importar snapshots ou sincronizar com uma fonte remota quando configurada).
-  - Isso permite desenvolver, testar e rodar 100% do app sobre uma implementação abstrata/modular de `StorageService` e trocar ou plugar o motor de banco/nuvem apenas no `ConfigureProviders` sem tocar em nenhuma tela ou regra de negócio.
+- **Abstração Total da Persistência Local (`Aula_24` Slides 4, 8, 20–26):**
+  - Nem a UI, nem os ViewModels, nem os UseCases conhecem a implementação física do banco.
+  - Os `Repositories` consomem um `StorageService` (armazenamento local/primário SQLite ou arquivo JSON local).
 - **Exportação (`PDF` e `CSV`):**
   - Usuário escolhe **Escopo** (*Catálogo Completo* ou *Lista de Desejos (`wantToRead`)*) e **Formato** (*PDF* ou *CSV*).
+  - Ação acessível diretamente via botão de exportação na AppBar da `LibraryScreen`.
   - **PDF:** Usar fonte `.ttf` em `assets/fonts/` no pacote `pdf` para garantir acentuação PT-BR (`ç`, `ã`, `é`, `ô`).
   - **CSV:** Incluir BOM UTF-8 (`\uFEFF`) e escapar corretamente aspas/quebras de linha de sinopses e citações.
   - Compartilhamento nativo via `path_provider` + `share_plus`.
 
-### Transversal — Design System & Fidelidade às Telas do Stitch (Criadas pelo Cleiton)
-- Manter estritamente a paleta de 5 tons de [`AppColors`](file:///media/natan_luc/HD%201TB/projetos/booky/lib/core/theme/app_colors.dart#L5-L35) e os estilos de [`AppTheme`](file:///media/natan_luc/HD%201TB/projetos/booky/lib/core/theme/app_theme.dart#L6-L497) em Modo Claro e Modo Escuro.
-- **Preservação Obrigatória do Layout Stitch:** As 7 telas criadas pelo Cleiton no Stitch (`AuthScreen`, `MainNavigationScreen`, `HomeScreen`, `LibraryScreen`, `AddBookScreen`, `BookDetailsScreen`, `ReadingTrackerScreen`, `ProfileScreen`) já possuem a identidade editorial definitiva do app (bordas `4px` com `1.0px` de espessura, tipografia Serif para títulos e Sans-Serif uppercase com `letterSpacing` para labels, segmented controls customizados, capas `2:3` com fita marcadora, moldura de scanner com cantoneiras e timer monospace). **Nunca** substituir esses layouts por componentes genéricos do Material Design; toda evolução funcional do Tema 6 deve usar exatamente os mesmos tokens visuais.
+### Transversal — Design System & Fidelidade às Telas do Stitch
+- Manter estritamente a paleta de 5 tons de `AppColors` e os estilos de `AppTheme` em Modo Claro e Modo Escuro.
+- Alternância de tema acessível diretamente no cabeçalho/AppBar da `MainNavigationScreen`.
 
 ---
 
 ## 3. Arquitetura Estrita (`Aula_24_-_Arqutietura_Recomendada.pdf` + `todo_app_arch`)
 
-O projeto segue rigorosamente a **Arquitetura Sugerida para Aplicações Flutter** apresentada pelo Prof. Taniro na `Aula_24`: **Arquitetura em Camadas (UI, Domain/Logic opcional, Data) + MVVM + Fluxo Unidirecional de Dados (UDF) + Fonte Única de Verdade (SSOT)** com `Provider` e `ConfigureProviders`.
+O projeto segue rigorosamente a **Arquitetura Sugerida para Aplicações Flutter** apresentada pelo Prof. Taniro na `Aula_24`: **Arquitetura em Camadas (UI, Domain/Logic, Data) + MVVM + Fluxo Unidirecional de Dados (UDF) + Fonte Única de Verdade (SSOT)** com `Provider` e `ConfigureProviders`.
 
 ```text
 ┌───────────────────────────────────────────────────────────────────────────┐
@@ -169,8 +182,8 @@ O projeto segue rigorosamente a **Arquitetura Sugerida para Aplicações Flutter
 │                                      │                                    │
 │   Services (lib/data/services/)      ▼  (Muitos-para-muitos, Slide 25)    │
 │     • Camada mais baixa, Stateless, 1 por fonte de dados externa/nativa   │
-│     • StorageService, BackupSyncService, BookApiService, OcrService,      │
-│       NotificationService, ExportService                                  │
+│     • StorageService, BookApiService, OcrService, NotificationService,    │
+│       ExportService                                                       │
 └───────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -178,35 +191,28 @@ O projeto segue rigorosamente a **Arquitetura Sugerida para Aplicações Flutter
 
 1. **Separação de Responsabilidades & View Limpa (Slides 4, 6, 15, 16):**
    - As `Views` são apenas composições de widgets que descrevem como apresentar dados prontos vindos do `ViewModel` (`context.watch<VM>()`) e repassam eventos do usuário para comandos do `ViewModel` (`context.read<VM>()`).
-   - **Lógica permitida dentro da View (Slide 16):** apenas condicionais simples (`if`) para mostrar/ocultar widgets, lógica de animação, lógica de layout (tamanho/orientação) e navegação simples.
+   - **Lógica permitida dentro da View (Slide 16):** apenas condicionais simples (`if`) para mostrar/ocultar widgets, lógica de animação, lógica de layout e navegação simples.
    - **Proibido na View:** qualquer lógica de dados, cálculos de negócio, chamadas HTTP, acesso a plugins nativos ou Services.
 2. **Relação 1:1 View ↔ ViewModel (Slides 6, 15, 18):**
-   - Cada View tem seu ViewModel correspondente (`ChangeNotifier`), que mantém o estado atual da UI, transforma dados dos repositórios para exibição (filtrar, ordenar, agregar) e expõe *commands* (callbacks):
-     - `AuthScreen` ↔ `AuthViewModel`
+   - Cada View tem seu ViewModel correspondente (`ChangeNotifier`):
      - `HomeScreen` ↔ `HomeViewModel`
      - `LibraryScreen` ↔ `LibraryViewModel`
      - `AddBookScreen` ↔ `AddBookViewModel`
      - `BookDetailsScreen` ↔ `BookDetailsViewModel`
      - `ReadingTrackerScreen` ↔ `TrackerViewModel`
-     - `ProfileScreen` ↔ `ProfileViewModel`
 3. **Repositories como Fonte Única de Verdade — SSOT (Slides 4, 8, 22, 23):**
-   - Cada tipo de dado no app tem um repositório próprio (`BookRepository`, `ShelfRepository`, `SessionRepository`, `NoteRepository`, `LoanRepository`, `UserProfileRepository`, `AuthRepository`).
+   - Cada tipo de dado no app tem um repositório próprio (`BookRepository`, `ShelfRepository`, `SessionRepository`, `NoteRepository`, `LoanRepository`, `SettingsRepository`).
    - O repositório é o **único lugar** que pode mutar aquele tipo de dado (Slide 8).
    - Relação `Repositories ↔ ViewModels` é **muitos-para-muitos** (Slide 23).
    - **Regra Crítica (Slide 23):** *Repos não devem depender uns dos outros; caso precisem combinar dados, isso deve ser feito no ViewModel ou na Camada de Domínio (UseCases).*
 4. **Services Stateless (Slides 8, 25):**
-   - Serviços são a camada mais baixa, não armazenam estado (*stateless*), isolam o carregamento de dados (APIs REST, arquivos locais, banco/armazenamento, recursos nativos do Android/iOS) e expõem `Future` / `Stream`.
-   - Relação `Repositories ↔ Services` é **muitos-para-muitos** (Slide 25).
-5. **Camada de Domínio / Use-Cases sob Demanda (Slides 7, 27, 28):**
-   - Adicionada apenas quando uma ação precisa combinar múltiplos repositórios ou encapsular lógica complexa e reutilizável (ex.: salvar sessão e atualizar progresso/status do livro; registrar empréstimo validando unicidade e agendando notificação; excluir livro e seus registros dependentes; consolidar estatísticas do dashboard).
-6. **Fluxo Unidirecional de Dados — UDF (Slides 4, 9, 10):**
-   - O estado flui da camada de dados (`Repository`) para a `UI` (via `Stream` / `notifyListeners`), e os eventos de interação do usuário fluem da `UI` (via `Command` no `ViewModel` / `UseCase`) de volta ao `Repository`.
-7. **Injeção de Dependências no padrão do Template (`ConfigureProviders` — Slide 30 / `todo_app_arch`):**
-   - `lib/core/di/configure_providers.dart` implementa `static Future<ConfigureProviders> createDependencyTree()` instanciando `Services` → `Repositories` → `UseCases` → `ViewModels` e fornecendo a lista para o `MultiProvider` em `lib/main.dart`.
+   - Serviços são a camada mais baixa, não armazenam estado (*stateless*), isolam o carregamento de dados (APIs REST, banco local, recursos nativos) e expõem `Future` / `Stream`.
+5. **Fluxo Unidirecional de Dados — UDF (Slides 4, 9, 10):**
+   - O estado flui da camada de dados (`Repository`) para a `UI`, e os eventos de interação fluem da `UI` de volta ao `Repository`.
+6. **Injeção de Dependências no padrão do Template (`ConfigureProviders` — Slide 30 / `todo_app_arch`):**
+   - `lib/core/di/configure_providers.dart` instancia `Services` → `Repositories` → `UseCases` → `ViewModels` no `MultiProvider` em `lib/main.dart`.
 
 ### Estrutura de Diretórios Alvo e Propriedade de Arquivos
-
-*(Alinhada ao exemplo do Slide 8: `data/services/`, `data/repositories/`, `domain/models/`, etc.)*
 
 ```text
 lib/
@@ -225,19 +231,17 @@ lib/
 │   │   ├── reading_session_model.dart
 │   │   ├── note_model.dart
 │   │   ├── loan_model.dart
-│   │   └── user_profile_model.dart
+│   │   └── app_settings_model.dart            (meta anual e lembretes diários)
 │   ├── repositories/                          [NATANAEL - Interfaces abstratas SSOT]
-│   │   ├── auth_repository.dart
 │   │   ├── book_repository.dart
 │   │   ├── shelf_repository.dart
 │   │   ├── session_repository.dart
 │   │   ├── note_repository.dart
 │   │   ├── loan_repository.dart
-│   │   └── user_profile_repository.dart
+│   │   └── settings_repository.dart
 │   └── use_cases/
 │       ├── delete_book_use_case.dart          [NATANAEL] (remove livro + notas/empréstimos/sessões)
 │       ├── export_library_use_case.dart       [NATANAEL] (filtra escopo + chama ExportService)
-│       ├── sync_backup_use_case.dart          [NATANAEL] (backup/restauração/sync + refresh SSOT)
 │       ├── save_reading_session_use_case.dart [CLEITON]  (salva sessão + atualiza página/status)
 │       ├── get_dashboard_stats_use_case.dart  [CLEITON]  (agrega Home: livros/páginas/meta/atrasos)
 │       ├── register_loan_use_case.dart        [CLEITON]  (valida 1 ativo + salva Loan + agenda notif)
@@ -245,30 +249,20 @@ lib/
 │
 ├── data/
 │   ├── services/
-│   │   ├── storage_service.dart               [NATANAEL] (interface + implementação abstrata de persistência local)
-│   │   ├── backup_sync_service.dart           [NATANAEL] (serviço stateless de backup/sincronização de dados)
+│   │   ├── storage_service.dart               [NATANAEL] (persistência local)
 │   │   ├── notification_service.dart          [NATANAEL] (flutter_local_notifications)
 │   │   ├── export_service.dart                [NATANAEL] (PDF + CSV + share_plus)
 │   │   ├── book_api_service.dart              [CLEITON]  (Google Books + Open Library HTTP)
 │   │   └── ocr_service.dart                   [CLEITON]  (image_picker + ML Kit OCR)
 │   └── repositories/                          [NATANAEL - Implementações concretas SSOT]
-│       ├── auth_repository_impl.dart
 │       ├── book_repository_impl.dart
 │       ├── shelf_repository_impl.dart
 │       ├── session_repository_impl.dart
 │       ├── note_repository_impl.dart
 │       ├── loan_repository_impl.dart
-│       └── user_profile_repository_impl.dart
+│       └── settings_repository_impl.dart
 │
 └── features/
-    ├── auth/presentation/                     [NATANAEL]
-    │   ├── viewmodels/auth_viewmodel.dart
-    │   ├── screens/auth_screen.dart
-    │   └── widgets/session_gate.dart
-    ├── profile/presentation/                  [NATANAEL]
-    │   ├── viewmodels/profile_viewmodel.dart
-    │   ├── screens/profile_screen.dart
-    │   └── widgets/
     ├── home/presentation/                     [CLEITON]
     │   ├── viewmodels/home_viewmodel.dart
     │   ├── screens/home_screen.dart
@@ -292,26 +286,20 @@ lib/
 
 ---
 
-## 4. Contratos Canônicos de Dados e Repositórios (Persistência Abstraída)
+## 4. Contratos Canônicos de Dados e Repositórios
 
 ### 4.1 Enums Canônicos (`lib/domain/models/enums.dart`)
-- `enum BookStatus { wantToRead, reading, read, abandoned }` — serializar usando `.name` (`'wantToRead'`, `'reading'`, `'read'`, `'abandoned'`).
-- `enum BookFormat { physical, digital }` — serializar usando `.name` (`'physical'`, `'digital'`).
-- `enum NoteType { note, quote, review }` — serializar usando `.name` (`'note'`, `'quote'`, `'review'`).
+- `enum BookStatus { wantToRead, reading, read, abandoned }`
+- `enum BookFormat { physical, digital }`
+- `enum NoteType { note, quote, review }`
 
 ### 4.2 Modelos de Domínio (`toJson()` / `fromJson()`)
 
-Todos os modelos são classes Dart imutáveis na camada `domain/models/`, independentes de qualquer biblioteca de banco de dados. IDs são `String` (UUID v4) e datas são serializadas em formato padrão ISO-8601 (`String` ou `int` epoch ms).
-
-1. **`UserProfileModel`** (coleção/chave lógica: `user_profile`)
-   - `id`: `String`
-   - `name`: `String`
-   - `email`: `String`
+1. **`AppSettingsModel`** (coleção lógica: `settings`)
    - `annualReadingGoal`: `int` (padrão `12`)
    - `dailyReminderEnabled`: `bool` (padrão `false`)
    - `dailyReminderHour`: `int` (padrão `20`)
    - `dailyReminderMinute`: `int` (padrão `0`)
-   - `lastSyncAt`: `DateTime?`
    - `updatedAt`: `DateTime`
 
 2. **`BookModel`** (coleção lógica: `books`)
@@ -335,9 +323,6 @@ Todos os modelos são classes Dart imutáveis na camada `domain/models/`, indepe
    - `finishedAt`: `DateTime?`
    - `createdAt`: `DateTime`
    - `updatedAt`: `DateTime`
-   - Getters puros:
-     - `double get progressPercent => totalPages > 0 ? (currentPage / totalPages).clamp(0.0, 1.0) : 0.0;`
-     - `bool get isFinished => status == BookStatus.read || (totalPages > 0 && currentPage >= totalPages);`
 
 3. **`ShelfModel`** (coleção lógica: `shelves`)
    - `id`: `String`
@@ -354,7 +339,7 @@ Todos os modelos são classes Dart imutáveis na camada `domain/models/`, indepe
    - `startPage`: `int`
    - `endPage`: `int`
    - `pagesRead`: `int` (`>= 0`)
-   - `dateKey`: `String` (formato `'YYYY-MM-DD'` para agrupamento diário exato)
+   - `dateKey`: `String` (formato `'YYYY-MM-DD'`)
    - `updatedAt`: `DateTime`
 
 5. **`NoteModel`** (coleção lógica: `notes`)
@@ -376,49 +361,14 @@ Todos os modelos são classes Dart imutáveis na camada `domain/models/`, indepe
    - `expectedReturnDate`: `DateTime`
    - `returnedDate`: `DateTime?`
    - `isReturned`: `bool` (padrão `false`)
-   - `notificationId`: `int?` (ID determinístico para cancelar notificação local na devolução)
+   - `notificationId`: `int?`
    - `updatedAt`: `DateTime`
-   - Getter calculado no domínio:
-     - `bool get isOverdue => !isReturned && DateTime.now().isAfter(DateTime(expectedReturnDate.year, expectedReturnDate.month, expectedReturnDate.day, 23, 59, 59));`
 
-### 4.3 Abstração dos Serviços de Dados (`StorageService` & `BackupSyncService`)
+### 4.3 Contratos das Interfaces de Repositório (`lib/domain/repositories/`)
 
-Para manter a persistência desacoplada (permitindo usar armazenamento em memória/JSON local inicialmente e trocar ou plugar qualquer banco local/remoto no futuro sem afetar os Repositories ou ViewModels):
-
-- **`StorageService` (`lib/data/services/storage_service.dart`):**
-  - Serviço *stateless* que opera sobre coleções nomeadas (`'books'`, `'shelves'`, `'sessions'`, `'notes'`, `'loans'`, `'user_profile'`, `'auth_session'`) usando `Map<String, dynamic>`:
-    - `Future<void> init()`
-    - `Future<List<Map<String, dynamic>>> getAll(String collection)`
-    - `Future<Map<String, dynamic>?> getById(String collection, String id)`
-    - `Future<void> upsert(String collection, String id, Map<String, dynamic> data)`
-    - `Future<void> delete(String collection, String id)`
-    - `Future<void> replaceCollection(String collection, List<Map<String, dynamic>> items)`
-    - `Future<void> clearCollection(String collection)`
-- **`BackupSyncService` (`lib/data/services/backup_sync_service.dart`):**
-  - Serviço *stateless* responsável por empacotar/desempacotar todo o acervo do usuário (backup completo JSON/nuvem) e sincronizar entre dispositivos quando acionado:
-    - `Future<Map<String, dynamic>> createBackupSnapshot(Map<String, List<Map<String, dynamic>>> allCollections)`
-    - `Future<void> exportBackupFile(Map<String, dynamic> snapshot)`
-    - `Future<Map<String, dynamic>?> importBackupFile()`
-    - `Future<DateTime> syncAll(StorageService storage)`
-- **`SyncBackupUseCase` (`lib/domain/use_cases/sync_backup_use_case.dart`):**
-  - UseCase da camada de domínio que coordena `BackupSyncService`, `StorageService` e os 6 `Repositories` (`BookRepository`, `ShelfRepository`, `SessionRepository`, `NoteRepository`, `LoanRepository`, `UserProfileRepository`) para exportar/importar/sincronizar os dados e recarregar os streams SSOT em memória sem acoplar repositórios entre si (respeitando o Slide 23 da `Aula_24`).
-
-### 4.4 Contratos das Interfaces de Repositório (`lib/domain/repositories/`)
-
-Cada repositório mantém a **Fonte Única de Verdade (SSOT)** da sua entidade, gerenciando o cache/stream reativo (`Stream`) e persistindo via `StorageService`:
-
-- **`AuthRepository`**:
-  - `Stream<String?> watchAuthUserId()`
-  - `String? get currentUserId`
-  - `String? get currentUserEmail`
-  - `Future<String> signIn({required String email, required String password})`
-  - `Future<String> signUp({required String name, required String email, required String password})`
-  - `Future<void> resetPassword({required String email})`
-  - `Future<void> signOut()`
-- **`UserProfileRepository`**:
-  - `Stream<UserProfileModel?> watchProfile()` (conforme exemplo do Slide 22 da `Aula_24`)
-  - `Future<UserProfileModel?> getProfile()`
-  - `Future<void> saveProfile(UserProfileModel profile)`
+- **`SettingsRepository`**:
+  - `Stream<AppSettingsModel> watchSettings()`
+  - `Future<AppSettingsModel> getSettings()`
   - `Future<void> updateAnnualGoal(int goal)`
   - `Future<void> updateDailyReminder({required bool enabled, required int hour, required int minute})`
 - **`BookRepository`**:
@@ -426,7 +376,7 @@ Cada repositório mantém a **Fonte Única de Verdade (SSOT)** da sua entidade, 
   - `Stream<BookModel?> watchBookById(String bookId)`
   - `Future<List<BookModel>> getBooks()`
   - `Future<BookModel?> getBookById(String bookId)`
-  - `Future<void> saveBook(BookModel book)` (create ou update)
+  - `Future<void> saveBook(BookModel book)`
   - `Future<void> deleteBook(String bookId)`
 - **`ShelfRepository`**:
   - `Stream<List<ShelfModel>> watchShelves()`
@@ -451,25 +401,23 @@ Cada repositório mantém a **Fonte Única de Verdade (SSOT)** da sua entidade, 
   - `Future<void> saveLoan(LoanModel loan)`
   - `Future<void> deleteLoansByBook(String bookId)`
 
-### 4.5 Contratos de Rotas e Ciclo de Vida de ViewModels (`lib/core/routes/app_routes.dart`)
-- `AppRoutes.auth` (`/auth`) → `AuthScreen`
-- `AppRoutes.main` (`/main`) → `MainNavigationScreen`
-- `AppRoutes.addBook` (`/add-book`) → `AddBookScreen` (recebe `BookModel?` opcional em `settings.arguments` para modo edição; cria `ChangeNotifierProvider<AddBookViewModel>` por tela lendo repositórios/serviços do `Provider`)
-- `AppRoutes.bookDetails` (`/book-details`) → `BookDetailsScreen` (recebe `String` obrigatório `bookId` em `settings.arguments` via `onGenerateRoute`; cria `ChangeNotifierProvider<BookDetailsViewModel>` por tela e descarta no `pop`)
-- `AppRoutes.tracker` (`/tracker`) → `ReadingTrackerScreen` (recebe `String?` opcional `bookId` em `settings.arguments` via `onGenerateRoute`; cria `ChangeNotifierProvider<TrackerViewModel>` por tela e descarta no `pop`)
-- Rota raiz em `BookyApp`: `home: const SessionGate()` (observa `AuthViewModel` / `AuthRepository` e alterna entre `AuthScreen` e `MainNavigationScreen`).
-- ViewModels das abas permanentes (`AuthViewModel`, `HomeViewModel`, `LibraryViewModel`, `ProfileViewModel`) + `ThemeController` + todos os `Services`, `Repositories` e `UseCases` são registrados em `ConfigureProviders.createDependencyTree()`.
+### 4.4 Contratos de Rotas (`lib/core/routes/app_routes.dart`)
+- `AppRoutes.initial` = `AppRoutes.main`
+- `AppRoutes.main` (`/main`) → `MainNavigationScreen` (abas: Início e Biblioteca)
+- `AppRoutes.addBook` (`/add-book`) → `AddBookScreen` (cria `AddBookViewModel`)
+- `AppRoutes.bookDetails` (`/book-details`) → `BookDetailsScreen` (cria `BookDetailsViewModel` recebendo `bookId`)
+- `AppRoutes.tracker` (`/tracker`) → `ReadingTrackerScreen` (cria `TrackerViewModel` recebendo `bookId` opcional)
 
 ---
 
 ## 5. Roadmap Integrado (Sprints 1 a 4)
 
-| Sprint | Foco Principal | Natanael (Arquitetura Base, Persistência Abstraída, Notificações, Export, Perfil) | Cleiton (APIs Livros, Scanner, Biblioteca, Tracker, Home, Detalhes/OCR) | Checkpoint de Integração |
+| Sprint | Foco Principal | Natanael (Arquitetura Base, Persistência Local, Notificações, Export) | Cleiton (APIs Livros, Scanner, Biblioteca, Tracker, Home, Detalhes/OCR) | Checkpoint de Integração |
 | :--- | :--- | :--- | :--- | :--- |
-| **Sprint 1** | Fundação Arquitetural (`Aula_24`), Contratos & Persistência Abstraída | • Setup Android + `pubspec.yaml` + `Command`<br>• Todos os Models + Interfaces de Repositories<br>• `StorageService` (abstraído) + 7 Repositories SSOT<br>• `SessionGate` + `AuthViewModel` + `AuthScreen`<br>• `ConfigureProviders`, `AppRoutes`, `ThemeController` | • `BookApiService` (Google Books + Open Library + testes HTTP)<br>• `OcrService` (`image_picker` + ML Kit)<br>• Preparar ViewModels/Fakes contra os contratos da Seção 4 | **Marco 1:** Árvore de dependências `ConfigureProviders` ativa no `main.dart`, sessão de leitor funcional e `BookRepository` emitindo streams reativos (SSOT). |
+| **Sprint 1** | Fundação Arquitetural (`Aula_24`), Contratos & Persistência Local | • Setup Android + `pubspec.yaml` + `Command`<br>• Todos os Models + Interfaces de Repositories<br>• `StorageService` (local) + 6 Repositories SSOT<br>• `ConfigureProviders`, `AppRoutes`, `ThemeController` | • `BookApiService` (Google Books + Open Library + testes HTTP)<br>• `OcrService` (`image_picker` + ML Kit)<br>• Preparar ViewModels contra os contratos da Seção 4 | **Marco 1:** Árvore de dependências `ConfigureProviders` ativa no `main.dart`, app abre direto na `MainNavigationScreen` e `BookRepository` emitindo streams reativos (SSOT). |
 | **Sprint 2** | Catalogação, Estante, Empréstimos & Diário | • `NotificationService` (agendamento + cancelamento + permissões)<br>• `DeleteBookUseCase` (exclusão em cascata via Repositories)<br>• Registro das dependências da Sprint 2 no `ConfigureProviders` | • `AddBookViewModel` + `AddBookScreen` (`mobile_scanner` + form completo)<br>• `LibraryViewModel` + `LibraryScreen` (estantes, tags, busca avançada, badges empréstimo/atraso)<br>• `RegisterLoanUseCase` + `ReturnLoanUseCase`<br>• `BookDetailsViewModel` + `BookDetailsScreen` (3 abas, OCR, empréstimos) | **Marco 2:** Fluxo completo cadastrar livro (ISBN/manual) → listar/filtrar → abrir detalhes → registrar notas/citações OCR/resenha → emprestar e devolver. |
-| **Sprint 3** | Rastreador, Estatísticas, Meta, Backup & Exportação | • `ExportService` (PDF Unicode + CSV UTF-8 + `share_plus`)<br>• `ExportLibraryUseCase` + `BackupSyncService`<br>• `ProfileViewModel` + `ProfileScreen` (Meta anual, Lembrete diário, Exportação PDF/CSV, Backup/Sincronização) | • `SaveReadingSessionUseCase`<br>• `TrackerViewModel` + `ReadingTrackerScreen` (cronômetro background, pág/%, estimativa, histórico diário)<br>• `GetDashboardStatsUseCase`<br>• `HomeViewModel` + `HomeScreen` (leitura atual, atrasos, `fl_chart` livros e páginas/mês, meta anual) | **Marco 3:** Sessão salva no Tracker atualiza progresso na Home, gráficos `fl_chart` refletem dados reais e exportação PDF/CSV + backup compartilham arquivos válidos. |
-| **Sprint 4** | Testes, Auditoria Visual & Entrega | • Testes unitários (`Models`, `Repositories`, `AuthViewModel`, `ExportService`, `ExportLibraryUseCase`, `DeleteBookUseCase`)<br>• Auditoria Light/Dark (`Auth`, `Profile`)<br>• Atualização final do `README.md` + `flutter build apk --release` | • Testes unitários (`BookApiService`, `LibraryViewModel`, `SaveReadingSessionUseCase`, `TrackerViewModel`, `RegisterLoanUseCase`, `GetDashboardStatsUseCase`)<br>• Auditoria Light/Dark (`Home`, `Library`, `AddBook`, `BookDetails`, `Tracker`)<br>• Validação ponta a ponta (offline e online) | **Marco Final:** `flutter analyze` limpo, `flutter test` passando 100%, APK validado em dispositivo físico. |
+| **Sprint 3** | Rastreador, Estatísticas, Meta & Exportação | • `ExportService` (PDF Unicode + CSV UTF-8 + `share_plus`)<br>• `ExportLibraryUseCase`<br>• Suporte à meta anual no `SettingsRepository` | • `SaveReadingSessionUseCase`<br>• `TrackerViewModel` + `ReadingTrackerScreen` (cronômetro background, pág/%, estimativa, histórico diário)<br>• `GetDashboardStatsUseCase`<br>• `HomeViewModel` + `HomeScreen` (leitura atual, atrasos, `fl_chart` livros e páginas/mês, meta anual editável) | **Marco 3:** Sessão salva no Tracker atualiza progresso na Home, gráficos `fl_chart` refletem dados reais e exportação PDF/CSV compartilha arquivos válidos. |
+| **Sprint 4** | Testes, Auditoria Visual & Entrega | • Testes unitários (`Models`, `Repositories`, `ExportService`, `ExportLibraryUseCase`, `DeleteBookUseCase`)<br>• Auditoria Light/Dark<br>• Atualização final do `README.md` + `flutter build apk --release` | • Testes unitários (`BookApiService`, `LibraryViewModel`, `SaveReadingSessionUseCase`, `TrackerViewModel`, `RegisterLoanUseCase`, `GetDashboardStatsUseCase`)<br>• Auditoria Light/Dark (`Home`, `Library`, `AddBook`, `BookDetails`, `Tracker`)<br>• Validação ponta a ponta offline | **Marco Final:** `flutter analyze` limpo, `flutter test` passando 100%, APK validado em dispositivo físico. |
 
 ---
 
