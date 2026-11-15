@@ -17,6 +17,11 @@ import '../../domain/repositories/note_repository.dart';
 import '../../domain/repositories/session_repository.dart';
 import '../../domain/repositories/settings_repository.dart';
 import '../../domain/repositories/shelf_repository.dart';
+import '../../domain/use_cases/delete_book_use_case.dart';
+import '../../domain/use_cases/get_dashboard_stats_use_case.dart';
+import '../../domain/use_cases/register_loan_use_case.dart';
+import '../../domain/use_cases/return_loan_use_case.dart';
+import '../../domain/use_cases/save_reading_session_use_case.dart';
 
 /// Árvore de Injeção de Dependências no padrão do Prof. Taniro (`todo_app_arch`).
 class ConfigureProviders {
@@ -34,13 +39,43 @@ class ConfigureProviders {
     final notificationService = NotificationService();
     await notificationService.init();
 
-    // 2. Repositórios SSOT
+    // 2. Repositórios Reativos SSOT (Single Source of Truth)
     final bookRepository = BookRepositoryImpl(storageService);
     final shelfRepository = ShelfRepositoryImpl(storageService);
     final sessionRepository = SessionRepositoryImpl(storageService);
     final noteRepository = NoteRepositoryImpl(storageService);
     final loanRepository = LoanRepositoryImpl(storageService);
     final settingsRepository = SettingsRepositoryImpl(storageService);
+
+    // 3. Casos de Uso (Orquestradores de regras de negócio entre repositórios)
+    final saveReadingSessionUseCase = SaveReadingSessionUseCase(
+      bookRepository: bookRepository,
+      sessionRepository: sessionRepository,
+    );
+
+    final registerLoanUseCase = RegisterLoanUseCase(
+      loanRepository: loanRepository,
+      notificationService: notificationService,
+    );
+
+    final returnLoanUseCase = ReturnLoanUseCase(
+      loanRepository: loanRepository,
+      notificationService: notificationService,
+    );
+
+    final deleteBookUseCase = DeleteBookUseCase(
+      bookRepository: bookRepository,
+      noteRepository: noteRepository,
+      loanRepository: loanRepository,
+      sessionRepository: sessionRepository,
+    );
+
+    final getDashboardStatsUseCase = GetDashboardStatsUseCase(
+      bookRepository: bookRepository,
+      sessionRepository: sessionRepository,
+      loanRepository: loanRepository,
+      settingsRepository: settingsRepository,
+    );
 
     return ConfigureProviders(
       providers: [
@@ -57,6 +92,13 @@ class ConfigureProviders {
         Provider<NoteRepository>.value(value: noteRepository),
         Provider<LoanRepository>.value(value: loanRepository),
         Provider<SettingsRepository>.value(value: settingsRepository),
+
+        // UseCases
+        Provider<SaveReadingSessionUseCase>.value(value: saveReadingSessionUseCase),
+        Provider<RegisterLoanUseCase>.value(value: registerLoanUseCase),
+        Provider<ReturnLoanUseCase>.value(value: returnLoanUseCase),
+        Provider<DeleteBookUseCase>.value(value: deleteBookUseCase),
+        Provider<GetDashboardStatsUseCase>.value(value: getDashboardStatsUseCase),
       ],
     );
   }

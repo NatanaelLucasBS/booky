@@ -69,7 +69,10 @@ class MockSessionRepository implements SessionRepository {
   Future<void> addSession(ReadingSessionModel session) => saveSession(session);
 
   @override
-  Stream<List<ReadingSessionModel>> watchSessions() => watchAllSessions();
+  Stream<List<ReadingSessionModel>> watchSessions() {
+    scheduleMicrotask(() => _controller.add(List.unmodifiable(_sessions)));
+    return _controller.stream;
+  }
 
   @override
   Stream<List<ReadingSessionModel>> watchSessionsByBook(String bookId) {

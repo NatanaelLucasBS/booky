@@ -14,6 +14,16 @@ class AppSettingsModel {
     required this.updatedAt,
   });
 
+  factory AppSettingsModel.initial() {
+    return AppSettingsModel(
+      annualReadingGoal: 12,
+      dailyReminderEnabled: false,
+      dailyReminderHour: 20,
+      dailyReminderMinute: 0,
+      updatedAt: DateTime.now(),
+    );
+  }
+
   AppSettingsModel copyWith({
     int? annualReadingGoal,
     bool? dailyReminderEnabled,
