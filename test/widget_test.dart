@@ -19,8 +19,6 @@ import 'package:booky/data/repositories/note_repository_impl.dart';
 import 'package:booky/data/repositories/loan_repository_impl.dart';
 import 'package:booky/data/repositories/settings_repository_impl.dart';
 import 'package:booky/domain/use_cases/save_reading_session_use_case.dart';
-import 'package:booky/domain/use_cases/register_loan_use_case.dart';
-import 'package:booky/domain/use_cases/return_loan_use_case.dart';
 import 'package:booky/domain/use_cases/delete_book_use_case.dart';
 import 'package:booky/domain/use_cases/get_dashboard_stats_use_case.dart';
 

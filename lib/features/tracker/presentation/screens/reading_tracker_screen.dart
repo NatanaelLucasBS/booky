@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/routes/app_routes.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../domain/models/book_model.dart';
 import '../../../../domain/models/enums.dart';
 import '../../../../domain/repositories/book_repository.dart';
 import '../../../../domain/repositories/session_repository.dart';

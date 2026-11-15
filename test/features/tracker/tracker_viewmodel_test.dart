@@ -33,7 +33,6 @@ class MockBookRepository implements BookRepository {
     return _controller.stream.map((list) => list.where((b) => b.id == id).firstOrNull);
   }
 
-  @override
   Future<List<BookModel>> getAllBooks() async => List.unmodifiable(_books);
 
   @override
@@ -53,12 +52,6 @@ class MockBookRepository implements BookRepository {
     _books.removeWhere((b) => b.id == id);
     _controller.add(List.unmodifiable(_books));
   }
-
-  @override
-  Stream<List<BookModel>> watchBooksByStatus(BookStatus status) => throw UnimplementedError();
-
-  @override
-  Stream<List<BookModel>> watchBooksByShelf(String shelfId) => throw UnimplementedError();
 }
 
 class MockSessionRepository implements SessionRepository {
@@ -83,7 +76,6 @@ class MockSessionRepository implements SessionRepository {
     return _controller.stream;
   }
 
-  @override
   Future<List<ReadingSessionModel>> getAllSessions() async => List.unmodifiable(_sessions);
 
   @override
@@ -91,7 +83,6 @@ class MockSessionRepository implements SessionRepository {
     return _sessions.where((s) => s.bookId == bookId).toList();
   }
 
-  @override
   Future<void> saveSession(ReadingSessionModel session) async {
     _sessions.add(session);
     _controller.add(_sessions.where((s) => s.bookId == session.bookId).toList());
@@ -106,9 +97,6 @@ class MockSessionRepository implements SessionRepository {
   Future<void> deleteSessionsByBook(String bookId) async {
     _sessions.removeWhere((s) => s.bookId == bookId);
   }
-
-  @override
-  Stream<List<ReadingSessionModel>> watchAllSessions() => throw UnimplementedError();
 }
 
 void main() {

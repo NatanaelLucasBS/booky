@@ -7,7 +7,6 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 
 import '../../domain/models/book_model.dart';
-import '../../domain/models/enums.dart';
 
 enum ExportScope {
   fullCatalog,
