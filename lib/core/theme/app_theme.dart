@@ -25,14 +25,12 @@ abstract final class AppTheme {
       onTertiary: AppColors.lightCream,
       surface: AppColors.lightCream,
       onSurface: AppColors.darkBrown,
-      surfaceVariant: AppColors.beige,
+      surfaceContainerHighest: AppColors.beige,
       onSurfaceVariant: AppColors.woodBrown,
       outline: AppColors.beige,
       outlineVariant: AppColors.beige,
       error: AppColors.darkBrown,
       onError: AppColors.lightCream,
-      background: AppColors.lightCream,
-      onBackground: AppColors.darkBrown,
     );
 
     return ThemeData(
@@ -274,14 +272,12 @@ abstract final class AppTheme {
       onTertiary: AppColors.lightCream,
       surface: AppColors.darkBrown,
       onSurface: AppColors.lightCream,
-      surfaceVariant: AppColors.woodBrown,
+      surfaceContainerHighest: AppColors.woodBrown,
       onSurfaceVariant: AppColors.beige,
       outline: AppColors.mediumBrown,
       outlineVariant: AppColors.woodBrown,
       error: AppColors.beige,
       onError: AppColors.darkBrown,
-      background: AppColors.darkBrown,
-      onBackground: AppColors.lightCream,
     );
 
     return ThemeData(

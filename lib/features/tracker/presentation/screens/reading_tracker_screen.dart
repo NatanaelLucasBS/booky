@@ -120,7 +120,7 @@ class _ReadingTrackerView extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: isDark
                               ? AppColors.woodBrown
-                              : AppColors.beige.withOpacity(0.35),
+                              : AppColors.beige.withValues(alpha: 0.35),
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(
                             color: isDark ? AppColors.mediumBrown : AppColors.beige,
@@ -203,7 +203,7 @@ class _ReadingTrackerView extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: isDark
                             ? AppColors.woodBrown
-                            : AppColors.beige.withOpacity(0.25),
+                            : AppColors.beige.withValues(alpha: 0.25),
                         borderRadius: BorderRadius.circular(4),
                         border: Border.all(
                           color: isDark ? AppColors.mediumBrown : AppColors.beige,
@@ -233,36 +233,43 @@ class _ReadingTrackerView extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 24),
-                              Column(
-                                children: [
-                                  Row(
-                                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                                    textBaseline: TextBaseline.alphabetic,
+                              InkWell(
+                                borderRadius: BorderRadius.circular(4),
+                                onTap: () => _showProgressInputDialog(context, vm, book.totalPages),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  child: Column(
                                     children: [
-                                      Text(
-                                        '${vm.currentPage}',
-                                        style: theme.textTheme.headlineMedium?.copyWith(
-                                          fontSize: 32,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                      Row(
+                                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                                        textBaseline: TextBaseline.alphabetic,
+                                        children: [
+                                          Text(
+                                            '${vm.currentPage}',
+                                            style: theme.textTheme.headlineMedium?.copyWith(
+                                              fontSize: 32,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'de ${book.totalPages}',
+                                            style: theme.textTheme.bodyMedium,
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(width: 6),
                                       Text(
-                                        'de ${book.totalPages}',
-                                        style: theme.textTheme.bodyMedium,
+                                        'página atual (toque p/ digitar pág. ou %)',
+                                        style: theme.textTheme.labelSmall?.copyWith(fontSize: 9),
                                       ),
                                     ],
                                   ),
-                                  Text(
-                                    'página atual',
-                                    style: theme.textTheme.labelSmall,
-                                  ),
-                                ],
+                                ),
                               ),
                               const SizedBox(width: 24),
                               // Botão Incrementar
                               IconButton.outlined(
-                                onPressed: vm.currentPage < book.totalPages
+                                onPressed: (book.totalPages == 0 || vm.currentPage < book.totalPages)
                                     ? vm.incrementPage
                                     : null,
                                 icon: const Icon(Icons.add, size: 20),
@@ -510,7 +517,7 @@ class _ReadingTrackerView extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.woodBrown.withOpacity(0.15),
+                  color: AppColors.woodBrown.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: const Text(
@@ -548,20 +555,100 @@ class _ReadingTrackerView extends StatelessWidget {
     );
   }
 
+  void _showProgressInputDialog(
+    BuildContext context,
+    TrackerViewModel vm,
+    int totalPages,
+  ) {
+    final pageCtrl = TextEditingController(text: vm.currentPage.toString());
+    final pctCtrl = TextEditingController(
+      text: (vm.currentPercent * 100).round().toString(),
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        title: const Text('Atualizar Progresso'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: pageCtrl,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: totalPages > 0
+                    ? 'Página Atual (0 a $totalPages)'
+                    : 'Página Atual',
+              ),
+              onChanged: (val) {
+                final p = int.tryParse(val);
+                if (p != null && totalPages > 0) {
+                  final pct = ((p / totalPages) * 100).clamp(0, 100).round();
+                  pctCtrl.text = pct.toString();
+                }
+              },
+            ),
+            if (totalPages > 0) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: pctCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Ou Porcentagem Concluída (0% a 100%)',
+                  suffixText: '%',
+                ),
+                onChanged: (val) {
+                  final pct = double.tryParse(val.replaceAll(',', '.'));
+                  if (pct != null) {
+                    final page = ((pct.clamp(0.0, 100.0) / 100.0) * totalPages).round();
+                    pageCtrl.text = page.toString();
+                  }
+                },
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('CANCELAR'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final page = int.tryParse(pageCtrl.text.trim());
+              if (page != null) {
+                vm.setPage(page);
+              }
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('APLICAR'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSessionsHistory(BuildContext context, TrackerViewModel vm, bool isDark) {
-    final recentSessions = vm.sessions.take(5).toList();
+    final grouped = vm.dailyGroupedSessions.entries.take(5).toList();
     return Column(
-      children: recentSessions.map((s) {
-        final dateStr = '${s.startTime.day.toString().padLeft(2, '0')}/${s.startTime.month.toString().padLeft(2, '0')}';
-        final durationMin = (s.durationSeconds / 60).round();
+      children: grouped.map((entry) {
+        final dateKey = entry.key;
+        final daySessions = entry.value;
+        final parts = dateKey.split('-');
+        final dateStr = parts.length == 3 ? '${parts[2]}/${parts[1]}' : dateKey;
+        final totalPagesDay = daySessions.fold<int>(0, (sum, s) => sum + s.pagesRead);
+        final totalSecondsDay = daySessions.fold<int>(0, (sum, s) => sum + s.durationSeconds);
+        final durationMin = (totalSecondsDay / 60).round();
+
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.woodBrown.withOpacity(0.3) : AppColors.beige.withOpacity(0.2),
+            color: isDark ? AppColors.woodBrown.withValues(alpha: 0.3) : AppColors.beige.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(4),
             border: Border.all(
-              color: isDark ? AppColors.mediumBrown.withOpacity(0.5) : AppColors.beige,
+              color: isDark ? AppColors.mediumBrown.withValues(alpha: 0.5) : AppColors.beige,
               width: 1.0,
             ),
           ),
@@ -578,7 +665,7 @@ class _ReadingTrackerView extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    '${s.pagesRead} páginas (pág. ${s.startPage} → ${s.endPage})',
+                    '$totalPagesDay páginas (${daySessions.length} ${daySessions.length == 1 ? "sessão" : "sessões"})',
                     style: const TextStyle(fontSize: 12),
                   ),
                 ],

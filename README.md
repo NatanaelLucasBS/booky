@@ -40,3 +40,24 @@ O projeto segue a arquitetura recomendada pelo time Flutter e apresentada em aul
 - **[`PLANO_DESENVOLVIMENTO.md`](./PLANO_DESENVOLVIMENTO.md):** Documento mestre de arquitetura, regras de negócio do Tema 6, contratos de dados e roadmap.
 - **[`TASKS_NATANAEL.md`](./TASKS_NATANAEL.md):** Backlog e issues do Natanael.
 - **[`TASKS_CLEITON.md`](./TASKS_CLEITON.md):** Backlog e issues do Cleiton.
+
+---
+
+## Como Executar e Testar
+
+```bash
+# 1. Instalar dependências
+flutter pub get
+
+# 2. Analisar código (lint e tipagem)
+flutter analyze
+
+# 3. Executar suíte de testes unitários e de widget
+flutter test
+
+# 4. Executar no dispositivo ou emulador Android
+flutter run
+
+# 5. Gerar APK de Release
+flutter build apk --release
+```

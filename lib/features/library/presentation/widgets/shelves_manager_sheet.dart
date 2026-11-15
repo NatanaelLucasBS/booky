@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../domain/models/shelf_model.dart';
 
-/// Modal para gerenciar estantes temáticas (listar, criar e excluir).
+/// Modal para gerenciar estantes temáticas (listar, criar, editar e excluir).
 class ShelvesManagerSheet extends StatefulWidget {
   final List<ShelfModel> shelves;
   final String? selectedShelfId;
   final void Function(String? shelfId) onSelectShelf;
   final Future<void> Function(String name, String? description) onCreateShelf;
+  final Future<void> Function(ShelfModel shelf, String name, String? description)? onEditShelf;
   final Future<void> Function(String shelfId) onDeleteShelf;
 
   const ShelvesManagerSheet({
@@ -16,6 +17,7 @@ class ShelvesManagerSheet extends StatefulWidget {
     required this.selectedShelfId,
     required this.onSelectShelf,
     required this.onCreateShelf,
+    this.onEditShelf,
     required this.onDeleteShelf,
   });
 
@@ -25,6 +27,7 @@ class ShelvesManagerSheet extends StatefulWidget {
     required String? selectedShelfId,
     required void Function(String? shelfId) onSelectShelf,
     required Future<void> Function(String name, String? description) onCreateShelf,
+    Future<void> Function(ShelfModel shelf, String name, String? description)? onEditShelf,
     required Future<void> Function(String shelfId) onDeleteShelf,
   }) {
     return showModalBottomSheet(
@@ -36,6 +39,7 @@ class ShelvesManagerSheet extends StatefulWidget {
         selectedShelfId: selectedShelfId,
         onSelectShelf: onSelectShelf,
         onCreateShelf: onCreateShelf,
+        onEditShelf: onEditShelf,
         onDeleteShelf: onDeleteShelf,
       ),
     );
@@ -66,6 +70,49 @@ class _ShelvesManagerSheetState extends State<ShelvesManagerSheet> {
     _nameCtrl.clear();
     _descCtrl.clear();
     if (mounted) setState(() => _isCreating = false);
+  }
+
+  void _showEditDialog(BuildContext context, ShelfModel shelf) {
+    final nameCtrl = TextEditingController(text: shelf.name);
+    final descCtrl = TextEditingController(text: shelf.description ?? '');
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Editar Estante'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(labelText: 'Nome da Estante'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descCtrl,
+              decoration: const InputDecoration(labelText: 'Descrição (opcional)'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: const Text('CANCELAR'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final clean = nameCtrl.text.trim();
+              if (clean.isNotEmpty && widget.onEditShelf != null) {
+                await widget.onEditShelf!(shelf, clean, descCtrl.text);
+                if (dialogCtx.mounted) Navigator.of(dialogCtx).pop();
+                if (mounted) setState(() {});
+              }
+            },
+            child: const Text('SALVAR'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -175,13 +222,24 @@ class _ShelvesManagerSheetState extends State<ShelvesManagerSheet> {
                   ),
                   title: Text(shelf.name),
                   subtitle: shelf.description != null ? Text(shelf.description!) : null,
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 20),
-                    color: isDark ? AppColors.beige : AppColors.mediumBrown,
-                    onPressed: () async {
-                      await widget.onDeleteShelf(shelf.id);
-                      if (context.mounted) setState(() {});
-                    },
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.onEditShelf != null)
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          color: isDark ? AppColors.beige : AppColors.mediumBrown,
+                          onPressed: () => _showEditDialog(context, shelf),
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 20),
+                        color: isDark ? AppColors.beige : AppColors.mediumBrown,
+                        onPressed: () async {
+                          await widget.onDeleteShelf(shelf.id);
+                          if (context.mounted) setState(() {});
+                        },
+                      ),
+                    ],
                   ),
                   onTap: () {
                     widget.onSelectShelf(shelf.id);

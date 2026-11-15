@@ -270,6 +270,19 @@ class LibraryViewModel extends ChangeNotifier {
     await _shelfRepository.saveShelf(newShelf);
   }
 
+  Future<void> updateShelf(ShelfModel shelf, String name, String? description) async {
+    final clean = name.trim();
+    if (clean.isEmpty) return;
+
+    final updated = shelf.copyWith(
+      name: clean,
+      description: description?.trim().isEmpty ?? true ? null : description!.trim(),
+      updatedAt: DateTime.now(),
+    );
+
+    await _shelfRepository.saveShelf(updated);
+  }
+
   Future<void> deleteShelf(String shelfId) async {
     await _shelfRepository.deleteShelf(shelfId);
     if (_selectedShelfId == shelfId) {

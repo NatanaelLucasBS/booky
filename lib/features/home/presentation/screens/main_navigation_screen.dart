@@ -23,7 +23,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       builder: (context, _) {
         final screens = [
           const HomeScreen(),
-          LibraryScreen(),
+          const LibraryScreen(),
         ];
 
         return Scaffold(

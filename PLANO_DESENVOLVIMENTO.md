@@ -408,6 +408,141 @@ lib/
 - `AppRoutes.bookDetails` (`/book-details`) → `BookDetailsScreen` (cria `BookDetailsViewModel` recebendo `bookId`)
 - `AppRoutes.tracker` (`/tracker`) → `ReadingTrackerScreen` (cria `TrackerViewModel` recebendo `bookId` opcional)
 
+### 4.5 Planejamento da Arquitetura do Banco de Dados Relacional (SQLite / Drift)
+
+> [!NOTE]
+> **Status deste planejamento:** Concepção arquitetural concluída e documentada. A implementação de código permanece intocada nesta entrega, mantendo o `LocalJsonStorageService` e o `InMemoryStorageService` em pleno funcionamento com 100% de cobertura nos testes.
+
+#### 1. Princípios de Projeto e Isolamento Arquitetural (`Aula_24`)
+A transição futura da persistência de arquivos JSON para um banco relacional SQLite segue estritamente o princípio de **Layered Architecture** e **Dependency Inversion** do Prof. Taniro:
+- O banco de dados fica 100% encapsulado abaixo da camada de dados (`lib/data/services/` e `lib/data/repositories/`).
+- **Nenhuma View, ViewModel ou UseCase será alterada:** toda a comunicação continuará passando pelas interfaces `BookRepository`, `ShelfRepository`, `SessionRepository`, `NoteRepository`, `LoanRepository` e `SettingsRepository`.
+- **Estratégia de Injeção:** Bastará implementar `SqliteStorageService implements StorageService` (ou repositórios SQLite dedicados) e alternar o provider em `ConfigureProviders.createDependencyTree()`.
+
+#### 2. DDL do Esquema Relacional Canônico (SQLite)
+
+```sql
+-- 1. Configurações Globais do Leitor
+CREATE TABLE IF NOT EXISTS app_settings (
+    id TEXT PRIMARY KEY NOT NULL,
+    annual_goal INTEGER NOT NULL DEFAULT 12,
+    reminder_enabled INTEGER NOT NULL DEFAULT 0,
+    reminder_hour INTEGER NOT NULL DEFAULT 20,
+    reminder_minute INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL
+);
+
+-- 2. Acervo de Livros
+CREATE TABLE IF NOT EXISTS books (
+    id TEXT PRIMARY KEY NOT NULL,
+    title TEXT NOT NULL,
+    authors TEXT NOT NULL,           -- JSON array de strings: ["Autor 1", "Autor 2"]
+    isbn TEXT,
+    cover_url TEXT,
+    publisher TEXT,
+    published_year INTEGER,
+    genre TEXT,
+    synopsis TEXT,
+    total_pages INTEGER NOT NULL DEFAULT 0,
+    current_page INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL CHECK (status IN ('wantToRead', 'reading', 'read', 'abandoned')),
+    format TEXT NOT NULL CHECK (format IN ('physical', 'digital')),
+    rating REAL,
+    tags TEXT NOT NULL DEFAULT '[]', -- JSON array de strings normalizadas
+    shelf_ids TEXT NOT NULL DEFAULT '[]', -- JSON array de IDs de estantes
+    started_at TEXT,                 -- ISO-8601 UTC
+    finished_at TEXT,                -- ISO-8601 UTC (fonte oficial de estatísticas)
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+-- 3. Estantes Temáticas
+CREATE TABLE IF NOT EXISTS shelves (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    book_count INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+-- 4. Tabela Relacional N:N (Livro <-> Estante)
+CREATE TABLE IF NOT EXISTS book_shelves (
+    book_id TEXT NOT NULL,
+    shelf_id TEXT NOT NULL,
+    PRIMARY KEY (book_id, shelf_id),
+    FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE,
+    FOREIGN KEY (shelf_id) REFERENCES shelves (id) ON DELETE CASCADE
+);
+
+-- 5. Sessões de Leitura (Rastreador)
+CREATE TABLE IF NOT EXISTS reading_sessions (
+    id TEXT PRIMARY KEY NOT NULL,
+    book_id TEXT NOT NULL,
+    date_key TEXT NOT NULL,          -- Formato YYYY-MM-DD para agrupamentos ultra-rápidos
+    start_page INTEGER NOT NULL,
+    end_page INTEGER NOT NULL,
+    pages_read INTEGER NOT NULL,
+    duration_seconds INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE
+);
+
+-- 6. Diário de Citações, Anotações e Resenhas
+CREATE TABLE IF NOT EXISTS notes (
+    id TEXT PRIMARY KEY NOT NULL,
+    book_id TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('citation', 'annotation', 'review')),
+    page INTEGER,
+    content TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE
+);
+
+-- 7. Empréstimos de Livros
+CREATE TABLE IF NOT EXISTS loans (
+    id TEXT PRIMARY KEY NOT NULL,
+    book_id TEXT NOT NULL,
+    borrower_name TEXT NOT NULL,
+    borrower_contact TEXT NOT NULL,
+    loan_date TEXT NOT NULL,
+    expected_return_date TEXT NOT NULL,
+    returned_date TEXT,
+    is_returned INTEGER NOT NULL DEFAULT 0, -- 0 = ativo, 1 = devolvido
+    notification_id INTEGER,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE
+);
+```
+
+#### 3. Índices de Otimização
+```sql
+-- Busca rápida de livros por status e ISBN
+CREATE INDEX IF NOT EXISTS idx_books_status ON books(status);
+CREATE INDEX IF NOT EXISTS idx_books_isbn ON books(isbn);
+
+-- Consultas históricas de sessões por livro e data
+CREATE INDEX IF NOT EXISTS idx_sessions_book_id ON reading_sessions(book_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_date_key ON reading_sessions(date_key);
+
+-- Anotações vinculadas a livros
+CREATE INDEX IF NOT EXISTS idx_notes_book_id ON notes(book_id);
+
+-- Detecção instantânea de empréstimos em aberto e vencidos
+CREATE INDEX IF NOT EXISTS idx_loans_book_id ON loans(book_id);
+CREATE INDEX IF NOT EXISTS idx_loans_active ON loans(is_returned, expected_return_date);
+```
+
+#### 4. Estratégia de Migração de Dados (Zero Data Loss)
+Quando a migração para SQLite for ativada:
+1. No método `init()` do `SqliteStorageService`, o serviço verifica se existe o arquivo `local_storage.json`.
+2. Caso o arquivo exista e a tabela `books` esteja vazia, executa uma transação de `seed`:
+   - Desserializa as coleções (`books`, `shelves`, `sessions`, `notes`, `loans`, `settings`);
+   - Insere em lote (`batch.insert`) com tratamento de chaves estrangeiras;
+   - Renomeia `local_storage.json` para `local_storage.json.bak` como salvaguarda.
+3. Como o `BackupSyncService` exporta o snapshot em JSON padrão, o backup/restore continuará 100% interoperável entre versões.
+
 ---
 
 ## 5. Roadmap Integrado (Sprints 1 a 4)

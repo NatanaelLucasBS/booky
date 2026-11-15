@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 
+import '../../../../data/services/notification_service.dart';
 import '../../../../domain/models/app_settings_model.dart';
 import '../../../../domain/models/book_model.dart';
 import '../../../../domain/models/loan_model.dart';
@@ -29,6 +30,7 @@ class HomeViewModel extends ChangeNotifier {
   final LoanRepository _loanRepository;
   final SettingsRepository _settingsRepository;
   final GetDashboardStatsUseCase _getDashboardStatsUseCase;
+  final NotificationService? _notificationService;
 
   StreamSubscription<List<BookModel>>? _booksSub;
   StreamSubscription<List<ReadingSessionModel>>? _sessionsSub;
@@ -39,6 +41,7 @@ class HomeViewModel extends ChangeNotifier {
   List<ReadingSessionModel> _sessions = [];
   List<LoanModel> _loans = [];
   AppSettingsModel _settings = AppSettingsModel.initial();
+  AppSettingsModel get settings => _settings;
 
   DashboardStats? _stats;
   DashboardStats? get stats => _stats;
@@ -58,11 +61,13 @@ class HomeViewModel extends ChangeNotifier {
     required LoanRepository loanRepository,
     required SettingsRepository settingsRepository,
     required GetDashboardStatsUseCase getDashboardStatsUseCase,
+    NotificationService? notificationService,
   })  : _bookRepository = bookRepository,
         _sessionRepository = sessionRepository,
         _loanRepository = loanRepository,
         _settingsRepository = settingsRepository,
-        _getDashboardStatsUseCase = getDashboardStatsUseCase {
+        _getDashboardStatsUseCase = getDashboardStatsUseCase,
+        _notificationService = notificationService {
     _initSubscriptions();
   }
 
@@ -114,6 +119,26 @@ class HomeViewModel extends ChangeNotifier {
   Future<void> updateAnnualGoal(int newGoal) async {
     if (newGoal <= 0) return;
     await _settingsRepository.updateAnnualGoal(newGoal);
+  }
+
+  Future<void> updateDailyReminder({
+    required bool enabled,
+    required int hour,
+    required int minute,
+  }) async {
+    await _settingsRepository.updateDailyReminder(
+      enabled: enabled,
+      hour: hour,
+      minute: minute,
+    );
+    if (enabled) {
+      await _notificationService?.scheduleDailyReadingReminder(
+        hour: hour,
+        minute: minute,
+      );
+    } else {
+      await _notificationService?.cancelDailyReadingReminder();
+    }
   }
 
   @override

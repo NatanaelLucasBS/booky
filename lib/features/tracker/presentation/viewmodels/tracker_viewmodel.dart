@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../../../domain/models/book_model.dart';
 import '../../../../domain/models/enums.dart';
@@ -10,7 +10,7 @@ import '../../../../domain/use_cases/save_reading_session_use_case.dart';
 
 /// ViewModel para a tela de Rastreamento de Leitura e Cronômetro (relação 1:1 com ReadingTrackerScreen).
 /// Slide 15 e 18 da Aula 24 (Arquitetura Flutter).
-class TrackerViewModel extends ChangeNotifier {
+class TrackerViewModel extends ChangeNotifier with WidgetsBindingObserver {
   final BookRepository _bookRepository;
   final SessionRepository _sessionRepository;
   final SaveReadingSessionUseCase _saveReadingSessionUseCase;
@@ -68,7 +68,17 @@ class TrackerViewModel extends ChangeNotifier {
   })  : _bookRepository = bookRepository,
         _sessionRepository = sessionRepository,
         _saveReadingSessionUseCase = saveReadingSessionUseCase {
+    try {
+      WidgetsBinding.instance.addObserver(this);
+    } catch (_) {}
     _init();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _isRunning) {
+      notifyListeners();
+    }
   }
 
   void _init() {
@@ -266,6 +276,9 @@ class TrackerViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    try {
+      WidgetsBinding.instance.removeObserver(this);
+    } catch (_) {}
     _ticker?.cancel();
     _booksSub?.cancel();
     _sessionsSub?.cancel();

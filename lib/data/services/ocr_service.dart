@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -14,6 +15,12 @@ class OcrService {
   Future<String?> extractTextFromImage({
     required ImageSource source,
   }) async {
+    if (kIsWeb) {
+      throw Exception(
+        'O reconhecimento de texto (OCR) por câmera é suportado apenas no aplicativo Android.',
+      );
+    }
+
     try {
       final xFile = await _picker.pickImage(
         source: source,
@@ -36,11 +43,13 @@ class OcrService {
         return cleaned.isEmpty ? null : cleaned;
       } finally {
         await textRecognizer.close();
-        final file = File(xFile.path);
-        if (await file.exists()) {
-          try {
-            await file.delete();
-          } catch (_) {}
+        if (!kIsWeb) {
+          final file = File(xFile.path);
+          if (await file.exists()) {
+            try {
+              await file.delete();
+            } catch (_) {}
+          }
         }
       }
     } catch (e) {

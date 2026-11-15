@@ -65,6 +65,7 @@ class _LibraryContentState extends State<_LibraryContent> {
       selectedShelfId: vm.selectedShelfId,
       onSelectShelf: (id) => vm.setSelectedShelf(id),
       onCreateShelf: (name, desc) => vm.createShelf(name, desc),
+      onEditShelf: (shelf, name, desc) => vm.updateShelf(shelf, name, desc),
       onDeleteShelf: (id) => vm.deleteShelf(id),
     );
   }
@@ -171,7 +172,7 @@ class _LibraryContentState extends State<_LibraryContent> {
                   ),
                   Chip(
                     label: Text(
-                      vm.shelves.firstWhere((s) => s.id == vm.selectedShelfId).name,
+                      vm.shelves.where((s) => s.id == vm.selectedShelfId).firstOrNull?.name ?? 'Estante',
                     ),
                     onDeleted: () => vm.setSelectedShelf(null),
                   ),
@@ -299,7 +300,7 @@ class _LibraryContentState extends State<_LibraryContent> {
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.woodBrown : AppColors.beige.withOpacity(0.4),
+                    color: isDark ? AppColors.woodBrown : AppColors.beige.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(
                       color: isDark ? AppColors.woodBrown : AppColors.beige,
@@ -424,7 +425,7 @@ class _LibraryContentState extends State<_LibraryContent> {
                 LinearProgressIndicator(
                   value: book.progressPercent,
                   minHeight: 2.5,
-                  backgroundColor: isDark ? AppColors.woodBrown : AppColors.beige.withOpacity(0.5),
+                  backgroundColor: isDark ? AppColors.woodBrown : AppColors.beige.withValues(alpha: 0.5),
                   color: isDark ? AppColors.lightCream : AppColors.darkBrown,
                 ),
                 const SizedBox(height: 2),
@@ -435,14 +436,30 @@ class _LibraryContentState extends State<_LibraryContent> {
               ],
             )
           else
-            Text(
-              book.status.label.toUpperCase(),
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.6,
-                color: isDark ? AppColors.beige : AppColors.mediumBrown,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  book.status.label.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.6,
+                    color: isDark ? AppColors.beige : AppColors.mediumBrown,
+                  ),
+                ),
+                if (book.rating != null && book.rating! > 0)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(5, (i) {
+                      return Icon(
+                        i < book.rating!.round() ? Icons.star : Icons.star_border,
+                        size: 11,
+                        color: isDark ? AppColors.lightCream : AppColors.woodBrown,
+                      );
+                    }),
+                  ),
+              ],
             ),
         ],
       ),
@@ -459,7 +476,7 @@ class _LibraryContentState extends State<_LibraryContent> {
             Icon(
               Icons.menu_book,
               size: 32,
-              color: (isDark ? AppColors.beige : AppColors.mediumBrown).withOpacity(0.5),
+              color: (isDark ? AppColors.beige : AppColors.mediumBrown).withValues(alpha: 0.5),
             ),
             const SizedBox(height: 8),
             Text(

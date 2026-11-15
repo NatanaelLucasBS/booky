@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 
 /// Dados consolidados de busca de livro por ISBN.
@@ -125,7 +124,7 @@ class BookApiService {
       }
 
       return result;
-    } on SocketException {
+    } on http.ClientException {
       throw const BookApiException(
         'Sem conexão com a internet. Verifique sua rede para buscar livros pelo ISBN.',
       );
@@ -136,6 +135,12 @@ class BookApiService {
     } on BookApiException {
       rethrow;
     } catch (e) {
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup')) {
+        throw const BookApiException(
+          'Sem conexão com a internet. Verifique sua rede para buscar livros pelo ISBN.',
+        );
+      }
       throw BookApiException('Erro ao consultar metadados do livro: $e');
     }
   }
@@ -261,6 +266,14 @@ class BookApiService {
 
     final totalPages = (bookData['number_of_pages'] as num?)?.toInt() ?? 0;
 
+    String? synopsis;
+    final notes = bookData['notes'];
+    if (notes is String && notes.trim().isNotEmpty) {
+      synopsis = notes.trim();
+    } else if (notes is Map<String, dynamic> && notes['value'] != null) {
+      synopsis = notes['value'].toString().trim();
+    }
+
     String? coverUrl;
     final cover = bookData['cover'] as Map<String, dynamic>?;
     if (cover != null) {
@@ -279,7 +292,7 @@ class BookApiService {
       publisher: publisher,
       publishedYear: publishedYear,
       genre: genre,
-      synopsis: null,
+      synopsis: synopsis,
       coverUrl: coverUrl,
       totalPages: totalPages,
     );

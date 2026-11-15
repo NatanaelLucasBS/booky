@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/routes/app_routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_controller.dart';
+import '../../../../data/services/notification_service.dart';
 import '../../../../domain/models/book_model.dart';
 import '../../../../domain/repositories/book_repository.dart';
 import '../../../../domain/repositories/loan_repository.dart';
@@ -40,12 +41,18 @@ class HomeScreen extends StatelessWidget {
           );
         }
 
+        NotificationService? notifService;
+        try {
+          notifService = ctx.read<NotificationService>();
+        } catch (_) {}
+
         return HomeViewModel(
           bookRepository: bookRepo,
           sessionRepository: sessionRepo,
           loanRepository: loanRepo,
           settingsRepository: settingsRepo,
           getDashboardStatsUseCase: useCase,
+          notificationService: notifService,
         );
       },
       child: const _HomeView(),
@@ -67,6 +74,11 @@ class _HomeView extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Início'),
         actions: [
+          IconButton(
+            tooltip: 'Lembrete Diário de Leitura',
+            icon: const Icon(Icons.notifications_none_outlined, size: 20),
+            onPressed: () => _showDailyReminderDialog(context, vm),
+          ),
           IconButton(
             tooltip: 'Ajustar Meta Anual',
             icon: const Icon(Icons.flag_outlined, size: 20),
@@ -112,7 +124,7 @@ class _HomeView extends StatelessWidget {
                         height: 44,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: isDark ? AppColors.woodBrown : AppColors.beige.withOpacity(0.4),
+                          color: isDark ? AppColors.woodBrown : AppColors.beige.withValues(alpha: 0.4),
                           border: Border.all(
                             color: isDark ? AppColors.mediumBrown : AppColors.beige,
                             width: 1.2,
@@ -132,7 +144,13 @@ class _HomeView extends StatelessWidget {
 
                   // Alerta de Empréstimos Atrasados
                   if (stats.overdueLoans.isNotEmpty && !vm.dismissOverdueAlert) ...[
-                    _buildOverdueLoansAlert(context, vm, stats.overdueLoans.length, isDark),
+                    _buildOverdueLoansAlert(
+                      context,
+                      vm,
+                      stats.overdueLoans.length,
+                      stats.overdueLoans.first.bookId,
+                      isDark,
+                    ),
                     const SizedBox(height: 16),
                   ],
 
@@ -140,7 +158,7 @@ class _HomeView extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.woodBrown : AppColors.beige.withOpacity(0.3),
+                      color: isDark ? AppColors.woodBrown : AppColors.beige.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
                         color: isDark ? AppColors.mediumBrown : AppColors.beige,
@@ -201,34 +219,47 @@ class _HomeView extends StatelessWidget {
     );
   }
 
-  Widget _buildOverdueLoansAlert(BuildContext context, HomeViewModel vm, int count, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.woodBrown.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          color: AppColors.woodBrown,
-          width: 1.0,
-        ),
+  Widget _buildOverdueLoansAlert(
+    BuildContext context,
+    HomeViewModel vm,
+    int count,
+    String firstBookId,
+    bool isDark,
+  ) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(4),
+      onTap: () => Navigator.of(context).pushNamed(
+        AppRoutes.bookDetails,
+        arguments: firstBookId,
       ),
-      child: Row(
-        children: [
-          const Icon(Icons.warning_amber_rounded, size: 20, color: AppColors.woodBrown),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              count == 1
-                  ? 'Você tem 1 empréstimo em atraso!'
-                  : 'Você tem $count empréstimos em atraso!',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.woodBrown.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: AppColors.woodBrown,
+            width: 1.0,
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, size: 20, color: AppColors.woodBrown),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                count == 1
+                    ? 'Você tem 1 empréstimo em atraso! (toque para ver)'
+                    : 'Você tem $count empréstimos em atraso! (toque para ver)',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.close, size: 16),
-            onPressed: vm.dismissAlert,
-          ),
-        ],
+            IconButton(
+              icon: const Icon(Icons.close, size: 16),
+              onPressed: vm.dismissAlert,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -247,7 +278,7 @@ class _HomeView extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.woodBrown : AppColors.beige.withOpacity(0.2),
+        color: isDark ? AppColors.woodBrown : AppColors.beige.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
           color: isDark ? AppColors.mediumBrown : AppColors.beige,
@@ -275,7 +306,7 @@ class _HomeView extends StatelessWidget {
                     border: Border.all(color: AppColors.beige, width: 1.0),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.12),
+                        color: AppColors.darkBrown.withValues(alpha: 0.12),
                         blurRadius: 6,
                         offset: const Offset(2, 4),
                       ),
@@ -393,7 +424,7 @@ class _HomeView extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.woodBrown : AppColors.beige.withOpacity(0.2),
+        color: isDark ? AppColors.woodBrown : AppColors.beige.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
           color: isDark ? AppColors.mediumBrown : AppColors.beige,
@@ -472,7 +503,7 @@ class _HomeView extends StatelessWidget {
               width: 220,
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.woodBrown.withOpacity(0.5) : AppColors.beige.withOpacity(0.2),
+                color: isDark ? AppColors.woodBrown.withValues(alpha: 0.5) : AppColors.beige.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(4),
                 border: Border.all(
                   color: isDark ? AppColors.mediumBrown : AppColors.beige,
@@ -578,6 +609,74 @@ class _HomeView extends StatelessWidget {
             ElevatedButton(
               onPressed: () async {
                 await vm.updateAnnualGoal(goal);
+                if (ctx.mounted) Navigator.of(ctx).pop();
+              },
+              child: const Text('SALVAR'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDailyReminderDialog(BuildContext context, HomeViewModel vm) {
+    bool enabled = vm.settings.dailyReminderEnabled;
+    TimeOfDay selectedTime = TimeOfDay(
+      hour: vm.settings.dailyReminderHour,
+      minute: vm.settings.dailyReminderMinute,
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (c, setState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          title: const Text('Lembrete Diário de Leitura'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Ativar notificação diária'),
+                value: enabled,
+                onChanged: (val) => setState(() => enabled = val),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                enabled: enabled,
+                leading: const Icon(Icons.access_time),
+                title: const Text('Horário do Lembrete'),
+                trailing: Text(
+                  '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                onTap: !enabled
+                    ? null
+                    : () async {
+                        final picked = await showTimePicker(
+                          context: ctx,
+                          initialTime: selectedTime,
+                        );
+                        if (picked != null) {
+                          setState(() => selectedTime = picked);
+                        }
+                      },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('CANCELAR'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await vm.updateDailyReminder(
+                  enabled: enabled,
+                  hour: selectedTime.hour,
+                  minute: selectedTime.minute,
+                );
                 if (ctx.mounted) Navigator.of(ctx).pop();
               },
               child: const Text('SALVAR'),

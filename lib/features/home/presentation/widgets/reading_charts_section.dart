@@ -54,7 +54,7 @@ class ReadingChartsSection extends StatelessWidget {
               // Segmented Control Editorial Stitch
               Container(
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkBrown : AppColors.beige.withOpacity(0.3),
+                  color: isDark ? AppColors.darkBrown : AppColors.beige.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(4),
                   border: Border.all(
                     color: isDark ? AppColors.mediumBrown : AppColors.beige,
@@ -167,7 +167,7 @@ class ReadingChartsSection extends StatelessWidget {
                   show: true,
                   drawVerticalLine: false,
                   getDrawingHorizontalLine: (value) => FlLine(
-                    color: isDark ? AppColors.mediumBrown.withOpacity(0.3) : AppColors.beige.withOpacity(0.5),
+                    color: isDark ? AppColors.mediumBrown.withValues(alpha: 0.3) : AppColors.beige.withValues(alpha: 0.5),
                     strokeWidth: 1.0,
                     dashArray: [4, 4],
                   ),
@@ -190,7 +190,7 @@ class ReadingChartsSection extends StatelessWidget {
                         backDrawRodData: BackgroundBarChartRodData(
                           show: true,
                           toY: maxY,
-                          color: isDark ? AppColors.darkBrown : AppColors.beige.withOpacity(0.2),
+                          color: isDark ? AppColors.darkBrown : AppColors.beige.withValues(alpha: 0.2),
                         ),
                       ),
                     ],

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
 
 /// Interface abstrata de persistência stateless por coleções.
@@ -21,6 +22,7 @@ class LocalJsonStorageService implements StorageService {
 
   @override
   Future<void> init() async {
+    if (kIsWeb) return;
     try {
       _dir = await getApplicationDocumentsDirectory();
     } catch (_) {
@@ -35,6 +37,10 @@ class LocalJsonStorageService implements StorageService {
 
   Future<Map<String, Map<String, dynamic>>> _loadCollection(String collection) async {
     if (_memoryCache.containsKey(collection)) {
+      return _memoryCache[collection]!;
+    }
+    if (kIsWeb) {
+      _memoryCache[collection] = {};
       return _memoryCache[collection]!;
     }
 
@@ -62,6 +68,7 @@ class LocalJsonStorageService implements StorageService {
   }
 
   Future<void> _saveCollection(String collection) async {
+    if (kIsWeb) return;
     final map = _memoryCache[collection] ?? {};
     final file = _getFile(collection);
     final jsonList = map.values.toList();
@@ -114,6 +121,7 @@ class LocalJsonStorageService implements StorageService {
   @override
   Future<void> clearCollection(String collection) async {
     _memoryCache[collection] = {};
+    if (kIsWeb) return;
     final file = _getFile(collection);
     if (await file.exists()) {
       await file.delete();

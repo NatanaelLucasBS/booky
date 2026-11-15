@@ -9,6 +9,5 @@ abstract final class AppConstants {
   // Icons
   static const String iconHome = 'assets/icons/ic_home.svg';
   static const String iconLibrary = 'assets/icons/ic_library.svg';
-  static const String iconProfile = 'assets/icons/ic_profile.svg';
   static const String iconScanner = 'assets/icons/ic_scanner.svg';
 }

@@ -21,7 +21,8 @@ class SettingsRepositoryImpl implements SettingsRepository {
       _cache = AppSettingsModel.fromJson(data);
     } else {
       _cache = AppSettingsModel(updatedAt: DateTime.now());
-      await _storage.upsert(_collection, _settingsId, _cache!.toJson());
+      final jsonMap = <String, dynamic>{'id': _settingsId, ..._cache!.toJson()};
+      await _storage.upsert(_collection, _settingsId, jsonMap);
     }
     _initialized = true;
     _controller.add(_cache!);
@@ -47,7 +48,8 @@ class SettingsRepositoryImpl implements SettingsRepository {
       annualReadingGoal: goal,
       updatedAt: DateTime.now(),
     );
-    await _storage.upsert(_collection, _settingsId, _cache!.toJson());
+    final jsonMap = <String, dynamic>{'id': _settingsId, ..._cache!.toJson()};
+    await _storage.upsert(_collection, _settingsId, jsonMap);
     _controller.add(_cache!);
   }
 
@@ -64,7 +66,8 @@ class SettingsRepositoryImpl implements SettingsRepository {
       dailyReminderMinute: minute,
       updatedAt: DateTime.now(),
     );
-    await _storage.upsert(_collection, _settingsId, _cache!.toJson());
+    final jsonMap = <String, dynamic>{'id': _settingsId, ..._cache!.toJson()};
+    await _storage.upsert(_collection, _settingsId, jsonMap);
     _controller.add(_cache!);
   }
 

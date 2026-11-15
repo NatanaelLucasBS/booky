@@ -88,7 +88,6 @@ class MockSessionRepository implements SessionRepository {
     _controller.add(_sessions.where((s) => s.bookId == session.bookId).toList());
   }
 
-  @override
   Future<void> deleteSession(String id) async {
     _sessions.removeWhere((s) => s.id == id);
   }
@@ -188,5 +187,40 @@ void main() {
     expect(sessions.length, equals(1));
     expect(sessions.first.pagesRead, equals(50));
     vm.dispose();
+  });
+
+  test('TrackerViewModel trata estimativa de tempo restante com totalPages == 0 sem NaN/Infinity', () async {
+    bookRepo.emit([
+      testBook.copyWith(totalPages: 0, currentPage: 0),
+    ]);
+
+    final vm = TrackerViewModel(
+      initialBookId: 'book-1',
+      bookRepository: bookRepo,
+      sessionRepository: sessionRepo,
+      saveReadingSessionUseCase: saveUseCase,
+    );
+    await pumpEventQueue();
+
+    expect(vm.currentPercent, equals(0.0));
+    expect(vm.remainingTime, isNull);
+    expect(vm.pagesPerHour.isFinite, isTrue);
+    vm.dispose();
+  });
+
+  test('SaveReadingSessionUseCase promove automaticamente para BookStatus.read ao atingir totalPages', () async {
+    final session = await saveUseCase.execute(
+      book: testBook,
+      startTime: DateTime.now().subtract(const Duration(minutes: 45)),
+      durationSeconds: 2700,
+      startPage: 300,
+      endPage: 600,
+    );
+
+    expect(session.pagesRead, equals(300));
+    final updatedBook = await bookRepo.getBookById('book-1');
+    expect(updatedBook?.currentPage, equals(600));
+    expect(updatedBook?.status, equals(BookStatus.read));
+    expect(updatedBook?.finishedAt, isNotNull);
   });
 }

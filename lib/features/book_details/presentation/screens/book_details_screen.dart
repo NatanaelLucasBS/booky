@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/routes/app_routes.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../data/services/notification_service.dart';
 import '../../../../data/services/ocr_service.dart';
 import '../../../../domain/models/book_model.dart';
 import '../../../../domain/models/enums.dart';
@@ -11,7 +10,6 @@ import '../../../../domain/models/note_model.dart';
 import '../../../../domain/repositories/book_repository.dart';
 import '../../../../domain/repositories/loan_repository.dart';
 import '../../../../domain/repositories/note_repository.dart';
-import '../../../../domain/repositories/session_repository.dart';
 import '../../../../domain/repositories/shelf_repository.dart';
 import '../../../../domain/use_cases/delete_book_use_case.dart';
 import '../../../../domain/use_cases/register_loan_use_case.dart';
@@ -47,20 +45,9 @@ class BookDetailsScreen extends StatelessWidget {
         loanRepository: ctx.read<LoanRepository>(),
         shelfRepository: ctx.read<ShelfRepository>(),
         ocrService: ctx.read<OcrService>(),
-        registerLoanUseCase: RegisterLoanUseCase(
-          loanRepository: ctx.read<LoanRepository>(),
-          notificationService: ctx.read<NotificationService>(),
-        ),
-        returnLoanUseCase: ReturnLoanUseCase(
-          loanRepository: ctx.read<LoanRepository>(),
-          notificationService: ctx.read<NotificationService>(),
-        ),
-        deleteBookUseCase: DeleteBookUseCase(
-          bookRepository: ctx.read<BookRepository>(),
-          noteRepository: ctx.read<NoteRepository>(),
-          loanRepository: ctx.read<LoanRepository>(),
-          sessionRepository: ctx.read<SessionRepository>(),
-        ),
+        registerLoanUseCase: ctx.read<RegisterLoanUseCase>(),
+        returnLoanUseCase: ctx.read<ReturnLoanUseCase>(),
+        deleteBookUseCase: ctx.read<DeleteBookUseCase>(),
       ),
       child: const _BookDetailsContent(),
     );
@@ -243,7 +230,7 @@ class _BookDetailsContentState extends State<_BookDetailsContent> {
                   width: 110,
                   height: 165,
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.woodBrown : AppColors.beige.withOpacity(0.4),
+                    color: isDark ? AppColors.woodBrown : AppColors.beige.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(
                       color: isDark ? AppColors.woodBrown : AppColors.beige,
@@ -366,7 +353,7 @@ class _BookDetailsContentState extends State<_BookDetailsContent> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.woodBrown : AppColors.beige.withOpacity(0.4),
+        color: isDark ? AppColors.woodBrown : AppColors.beige.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
           color: isDark ? AppColors.woodBrown : AppColors.beige,
@@ -393,7 +380,7 @@ class _BookDetailsContentState extends State<_BookDetailsContent> {
           Icon(
             Icons.menu_book,
             size: 32,
-            color: (isDark ? AppColors.beige : AppColors.mediumBrown).withOpacity(0.5),
+            color: (isDark ? AppColors.beige : AppColors.mediumBrown).withValues(alpha: 0.5),
           ),
           const SizedBox(height: 6),
           Padding(
@@ -421,96 +408,150 @@ class _BookDetailsContentState extends State<_BookDetailsContent> {
     final loan = vm.activeLoan;
 
     if (loan == null) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(
-            color: isDark ? AppColors.woodBrown : AppColors.beige,
-            width: 1.0,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(
+                color: isDark ? AppColors.woodBrown : AppColors.beige,
+                width: 1.0,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('LIVRO NA SUA ESTANTE', style: theme.textTheme.labelSmall),
-                const SizedBox(height: 2),
-                Text('Disponível para empréstimo', style: theme.textTheme.bodySmall),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('LIVRO NA SUA ESTANTE', style: theme.textTheme.labelSmall),
+                    const SizedBox(height: 2),
+                    Text('Disponível para empréstimo', style: theme.textTheme.bodySmall),
+                  ],
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _openLoanDialog(context, vm),
+                  icon: const Icon(Icons.share, size: 14),
+                  label: const Text('EMPRESTAR', style: TextStyle(fontSize: 11)),
+                ),
               ],
             ),
-            OutlinedButton.icon(
-              onPressed: () => _openLoanDialog(context, vm),
-              icon: const Icon(Icons.share, size: 14),
-              label: const Text('EMPRESTAR', style: TextStyle(fontSize: 11)),
-            ),
+          ),
+          if (vm.returnedLoans.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _buildReturnedLoansHistory(vm, theme, isDark),
           ],
-        ),
+        ],
       );
     }
 
     final isOverdue = loan.isOverdue;
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isOverdue
-            ? AppColors.darkBrown.withOpacity(0.12)
-            : (isDark ? AppColors.woodBrown.withOpacity(0.3) : AppColors.beige.withOpacity(0.3)),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          color: isOverdue
-              ? (isDark ? AppColors.lightCream : AppColors.darkBrown)
-              : (isDark ? AppColors.woodBrown : AppColors.beige),
-          width: isOverdue ? 1.5 : 1.0,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isOverdue
+                ? AppColors.darkBrown.withValues(alpha: 0.12)
+                : (isDark
+                    ? AppColors.woodBrown.withValues(alpha: 0.3)
+                    : AppColors.beige.withValues(alpha: 0.3)),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+              color: isOverdue
+                  ? (isDark ? AppColors.lightCream : AppColors.darkBrown)
+                  : (isDark ? AppColors.woodBrown : AppColors.beige),
+              width: isOverdue ? 1.5 : 1.0,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Icon(
-                    isOverdue ? Icons.warning_amber : Icons.bookmark_border,
-                    size: 18,
-                    color: isDark ? AppColors.lightCream : AppColors.darkBrown,
+                  Row(
+                    children: [
+                      Icon(
+                        isOverdue ? Icons.warning_amber : Icons.bookmark_border,
+                        size: 18,
+                        color: isDark ? AppColors.lightCream : AppColors.darkBrown,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        isOverdue ? 'EMPRÉSTIMO ATRASADO' : 'LIVRO EMPRESTADO',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
                   Text(
-                    isOverdue ? 'EMPRÉSTIMO ATRASADO' : 'LIVRO EMPRESTADO',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
-                    ),
+                    'Devolução: ${_formatDate(loan.expectedReturnDate)}',
+                    style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
+              const SizedBox(height: 8),
               Text(
-                'Devolução: ${_formatDate(loan.expectedReturnDate)}',
-                style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                'Emprestado para: ${loan.borrowerName}${loan.borrowerContact.isNotEmpty ? " (${loan.borrowerContact})" : ""}',
+                style: theme.textTheme.bodyMedium,
+              ),
+              Text(
+                'Desde: ${_formatDate(loan.loanDate)}',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () => vm.returnLoan(),
+                icon: const Icon(Icons.check, size: 16),
+                label: const Text('REGISTRAR DEVOLUÇÃO'),
               ),
             ],
           ),
+        ),
+        if (vm.returnedLoans.isNotEmpty) ...[
           const SizedBox(height: 8),
+          _buildReturnedLoansHistory(vm, theme, isDark),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildReturnedLoansHistory(
+    BookDetailsViewModel vm,
+    ThemeData theme,
+    bool isDark,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.woodBrown.withValues(alpha: 0.15) : AppColors.beige.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Text(
-            'Emprestado para: ${loan.borrowerName} (${loan.borrowerContact})',
-            style: theme.textTheme.bodyMedium,
+            'HISTÓRICO DE EMPRÉSTIMOS (${vm.returnedLoans.length})',
+            style: theme.textTheme.labelSmall?.copyWith(fontSize: 9, letterSpacing: 0.8),
           ),
-          Text(
-            'Desde: ${_formatDate(loan.loanDate)}',
-            style: theme.textTheme.bodySmall,
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: () => vm.returnLoan(),
-            icon: const Icon(Icons.check, size: 16),
-            label: const Text('REGISTRAR DEVOLUÇÃO'),
-          ),
+          const SizedBox(height: 4),
+          ...vm.returnedLoans.take(3).map((item) {
+            final retDate = item.returnedDate != null ? _formatDate(item.returnedDate!) : '—';
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Text(
+                '• ${item.borrowerName} (${_formatDate(item.loanDate)} → devolvido em $retDate)',
+                style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -526,7 +567,7 @@ class _BookDetailsContentState extends State<_BookDetailsContent> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.woodBrown.withOpacity(0.25) : AppColors.beige.withOpacity(0.2),
+        color: isDark ? AppColors.woodBrown.withValues(alpha: 0.25) : AppColors.beige.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Column(
@@ -614,7 +655,7 @@ class _BookDetailsContentState extends State<_BookDetailsContent> {
         Container(
           padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.woodBrown : AppColors.beige.withOpacity(0.35),
+            color: isDark ? AppColors.woodBrown : AppColors.beige.withValues(alpha: 0.35),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Row(
@@ -798,7 +839,7 @@ class _BookDetailsContentState extends State<_BookDetailsContent> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.woodBrown.withOpacity(0.2) : AppColors.beige.withOpacity(0.25),
+        color: isDark ? AppColors.woodBrown.withValues(alpha: 0.2) : AppColors.beige.withValues(alpha: 0.25),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
           color: isDark ? AppColors.woodBrown : AppColors.beige,

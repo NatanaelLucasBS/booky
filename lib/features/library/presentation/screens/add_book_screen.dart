@@ -42,6 +42,7 @@ class _AddBookContent extends StatefulWidget {
 
 class _AddBookContentState extends State<_AddBookContent> {
   final _isbnQuickController = TextEditingController();
+  final _isbnManualController = TextEditingController();
   final _titleController = TextEditingController();
   final _authorController = TextEditingController();
   final _publisherController = TextEditingController();
@@ -69,6 +70,7 @@ class _AddBookContentState extends State<_AddBookContent> {
   @override
   void dispose() {
     _isbnQuickController.dispose();
+    _isbnManualController.dispose();
     _titleController.dispose();
     _authorController.dispose();
     _publisherController.dispose();
@@ -93,6 +95,7 @@ class _AddBookContentState extends State<_AddBookContent> {
       _coverUrlController.text = vm.coverUrl ?? '';
       _synopsisController.text = vm.synopsis ?? '';
       _isbnQuickController.text = vm.isbn;
+      _isbnManualController.text = vm.isbn;
       _controllersInitialized = true;
     }
   }
@@ -103,6 +106,8 @@ class _AddBookContentState extends State<_AddBookContent> {
     if (!mounted) return;
 
     if (success) {
+      _isbnQuickController.text = vm.isbn;
+      _isbnManualController.text = vm.isbn;
       _titleController.text = vm.title;
       _authorController.text = vm.author;
       _publisherController.text = vm.publisher ?? '';
@@ -148,6 +153,7 @@ class _AddBookContentState extends State<_AddBookContent> {
   Future<void> _onSave() async {
     final vm = context.read<AddBookViewModel>();
 
+    vm.setIsbn(_isbnManualController.text);
     vm.setTitle(_titleController.text);
     vm.setAuthor(_authorController.text);
     vm.setPublisher(_publisherController.text);
@@ -248,7 +254,7 @@ class _AddBookContentState extends State<_AddBookContent> {
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.woodBrown : AppColors.beige.withOpacity(0.35),
+                  color: isDark ? AppColors.woodBrown : AppColors.beige.withValues(alpha: 0.35),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Row(
@@ -337,18 +343,47 @@ class _AddBookContentState extends State<_AddBookContent> {
           height: 260,
           margin: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.woodBrown.withOpacity(0.4) : AppColors.beige.withOpacity(0.2),
+            color: isDark ? AppColors.woodBrown.withValues(alpha: 0.4) : AppColors.beige.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Câmera MobileScanner Real
+              // Câmera MobileScanner Real com tratamento seguro de erro/permissão
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: MobileScanner(
                   controller: _scannerController,
                   onDetect: _onBarcodeDetected,
+                  errorBuilder: (context, error, child) {
+                    return Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.videocam_off_outlined,
+                            size: 36,
+                            color: isDark ? AppColors.beige : AppColors.woodBrown,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Câmera indisponível ou permissão negada.',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: () => vm.setMode(1),
+                            child: const Text(
+                              'USAR CADASTRO MANUAL',
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
 
@@ -378,7 +413,7 @@ class _AddBookContentState extends State<_AddBookContent> {
               Container(
                 width: 200,
                 height: 1.5,
-                color: isDark ? AppColors.lightCream.withOpacity(0.8) : AppColors.darkBrown.withOpacity(0.8),
+                color: isDark ? AppColors.lightCream.withValues(alpha: 0.8) : AppColors.darkBrown.withValues(alpha: 0.8),
               ),
 
               // Indicador de Carregamento ao buscar ISBN
@@ -480,7 +515,7 @@ class _AddBookContentState extends State<_AddBookContent> {
                   color: isDark ? AppColors.woodBrown : AppColors.beige,
                   width: 1.0,
                 ),
-                color: isDark ? AppColors.woodBrown : AppColors.beige.withOpacity(0.3),
+                color: isDark ? AppColors.woodBrown : AppColors.beige.withValues(alpha: 0.3),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(4),
@@ -508,13 +543,48 @@ class _AddBookContentState extends State<_AddBookContent> {
 
         const SizedBox(height: 16),
 
-        _buildFieldLabel('Autor'),
-        const SizedBox(height: 6),
-        TextField(
-          controller: _authorController,
-          decoration: const InputDecoration(
-            hintText: 'Ex: Machado de Assis',
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildFieldLabel('Autor'),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _authorController,
+                    decoration: const InputDecoration(
+                      hintText: 'Ex: Machado de Assis',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildFieldLabel('ISBN (10 ou 13 dígitos)'),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _isbnManualController,
+                    decoration: InputDecoration(
+                      hintText: 'Ex: 9788532511010',
+                      suffixIcon: IconButton(
+                        tooltip: 'Buscar dados pelo ISBN',
+                        icon: const Icon(Icons.search, size: 18),
+                        onPressed: () {
+                          final raw = _isbnManualController.text.trim();
+                          if (raw.isNotEmpty) _handleIsbnLookup(raw);
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
 
         const SizedBox(height: 16),

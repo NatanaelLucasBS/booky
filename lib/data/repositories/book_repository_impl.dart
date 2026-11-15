@@ -53,12 +53,13 @@ class BookRepositoryImpl implements BookRepository {
   @override
   Future<void> saveBook(BookModel book) async {
     await _ensureInitialized();
-    await _storage.upsert(_collection, book.id, book.toJson());
-    final index = _cache.indexWhere((b) => b.id == book.id);
+    final updatedBook = book.copyWith(updatedAt: DateTime.now());
+    await _storage.upsert(_collection, updatedBook.id, updatedBook.toJson());
+    final index = _cache.indexWhere((b) => b.id == updatedBook.id);
     if (index >= 0) {
-      _cache[index] = book;
+      _cache[index] = updatedBook;
     } else {
-      _cache.add(book);
+      _cache.add(updatedBook);
     }
     _controller.add(List.unmodifiable(_cache));
   }

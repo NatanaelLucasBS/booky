@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
@@ -25,6 +26,7 @@ import '../../domain/use_cases/get_dashboard_stats_use_case.dart';
 import '../../domain/use_cases/register_loan_use_case.dart';
 import '../../domain/use_cases/return_loan_use_case.dart';
 import '../../domain/use_cases/save_reading_session_use_case.dart';
+import '../theme/theme_controller.dart';
 
 /// Árvore de Injeção de Dependências no padrão do Prof. Taniro (`todo_app_arch`).
 class ConfigureProviders {
@@ -33,8 +35,9 @@ class ConfigureProviders {
   ConfigureProviders({required this.providers});
 
   static Future<ConfigureProviders> createDependencyTree() async {
-    // 1. Serviços Stateless
-    final storageService = LocalJsonStorageService();
+    // 1. Serviços Stateless (com fallback seguro em memória quando executado no Chrome/Web)
+    final StorageService storageService =
+        kIsWeb ? InMemoryStorageService() : LocalJsonStorageService();
     await storageService.init();
 
     final bookApiService = BookApiService();
@@ -89,6 +92,9 @@ class ConfigureProviders {
 
     return ConfigureProviders(
       providers: [
+        // Theme
+        ChangeNotifierProvider<ThemeController>.value(value: themeController),
+
         // Services
         Provider<StorageService>.value(value: storageService),
         Provider<BookApiService>.value(value: bookApiService),

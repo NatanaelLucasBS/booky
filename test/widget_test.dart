@@ -2,8 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:booky/main.dart';
 import 'package:booky/core/di/configure_providers.dart';
+import 'package:booky/core/theme/theme_controller.dart';
 import 'package:booky/data/services/storage_service.dart';
+import 'package:booky/data/services/backup_sync_service.dart';
 import 'package:booky/data/services/book_api_service.dart';
+import 'package:booky/data/services/export_service.dart';
 import 'package:booky/data/services/ocr_service.dart';
 import 'package:booky/data/services/notification_service.dart';
 import 'package:booky/domain/repositories/book_repository.dart';
@@ -20,7 +23,10 @@ import 'package:booky/data/repositories/loan_repository_impl.dart';
 import 'package:booky/data/repositories/settings_repository_impl.dart';
 import 'package:booky/domain/use_cases/save_reading_session_use_case.dart';
 import 'package:booky/domain/use_cases/delete_book_use_case.dart';
+import 'package:booky/domain/use_cases/export_library_use_case.dart';
 import 'package:booky/domain/use_cases/get_dashboard_stats_use_case.dart';
+import 'package:booky/domain/use_cases/register_loan_use_case.dart';
+import 'package:booky/domain/use_cases/return_loan_use_case.dart';
 
 void main() {
   testWidgets('BookyApp smoke test inicializa com sucesso', (WidgetTester tester) async {
@@ -31,13 +37,18 @@ void main() {
     final noteRepo = NoteRepositoryImpl(storage);
     final loanRepo = LoanRepositoryImpl(storage);
     final settingsRepo = SettingsRepositoryImpl(storage);
+    final notificationService = NotificationService();
+    const exportService = ExportService();
 
     final di = ConfigureProviders(
       providers: [
+        ChangeNotifierProvider<ThemeController>.value(value: themeController),
         Provider<StorageService>.value(value: storage),
         Provider<BookApiService>.value(value: BookApiService()),
         Provider<OcrService>.value(value: OcrService()),
-        Provider<NotificationService>.value(value: NotificationService()),
+        Provider<NotificationService>.value(value: notificationService),
+        Provider<ExportService>.value(value: exportService),
+        Provider<BackupSyncService>.value(value: BackupSyncService(storage)),
         Provider<BookRepository>.value(value: bookRepo),
         Provider<ShelfRepository>.value(value: shelfRepo),
         Provider<SessionRepository>.value(value: sessionRepo),
@@ -48,6 +59,18 @@ void main() {
           value: SaveReadingSessionUseCase(
             bookRepository: bookRepo,
             sessionRepository: sessionRepo,
+          ),
+        ),
+        Provider<RegisterLoanUseCase>.value(
+          value: RegisterLoanUseCase(
+            loanRepository: loanRepo,
+            notificationService: notificationService,
+          ),
+        ),
+        Provider<ReturnLoanUseCase>.value(
+          value: ReturnLoanUseCase(
+            loanRepository: loanRepo,
+            notificationService: notificationService,
           ),
         ),
         Provider<DeleteBookUseCase>.value(
@@ -64,6 +87,12 @@ void main() {
             sessionRepository: sessionRepo,
             loanRepository: loanRepo,
             settingsRepository: settingsRepo,
+          ),
+        ),
+        Provider<ExportLibraryUseCase>.value(
+          value: ExportLibraryUseCase(
+            bookRepository: bookRepo,
+            exportService: exportService,
           ),
         ),
       ],

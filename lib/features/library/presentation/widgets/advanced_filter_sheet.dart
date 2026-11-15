@@ -239,7 +239,7 @@ class _AdvancedFilterSheetState extends State<AdvancedFilterSheet> {
               _buildLabel('Estante Temática'),
               const SizedBox(height: 4),
               DropdownButtonFormField<String?>(
-                value: _selectedShelfId,
+                initialValue: _selectedShelfId,
                 decoration: const InputDecoration(hintText: 'Selecione uma estante'),
                 items: [
                   const DropdownMenuItem(value: null, child: Text('Todas as estantes')),

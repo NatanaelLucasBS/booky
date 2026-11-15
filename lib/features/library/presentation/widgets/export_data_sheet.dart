@@ -168,6 +168,15 @@ class _ExportDataSheetState extends State<ExportDataSheet> {
                 minimumSize: const Size.fromHeight(48),
               ),
             ),
+
+            const SizedBox(height: 10),
+
+            // Botão Terciário: Restaurar Backup JSON
+            TextButton.icon(
+              onPressed: _isProcessing ? null : () => _showRestoreDialog(context),
+              icon: const Icon(Icons.restore_outlined, size: 16),
+              label: const Text('RESTAURAR BACKUP (JSON)'),
+            ),
           ],
         ),
       ),
@@ -224,6 +233,78 @@ class _ExportDataSheetState extends State<ExportDataSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro ao gerar backup: $e'),
+            backgroundColor: AppColors.woodBrown,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  void _showRestoreDialog(BuildContext context) {
+    final jsonCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        title: const Text('Restaurar Backup (JSON)'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Cole abaixo o conteúdo do arquivo JSON de backup gerado pelo Booky:',
+              style: TextStyle(fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: jsonCtrl,
+              maxLines: 6,
+              decoration: const InputDecoration(
+                hintText: '{"version": "1.0.0", "collections": { ... }}',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('CANCELAR'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final raw = jsonCtrl.text.trim();
+              if (raw.isEmpty) return;
+              Navigator.of(ctx).pop();
+              await _handleRestore(raw);
+            },
+            child: const Text('RESTAURAR'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleRestore(String rawJson) async {
+    setState(() => _isProcessing = true);
+    try {
+      final backupService = context.read<BackupSyncService>();
+      final count = await backupService.restoreFromJson(rawJson);
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Backup restaurado com sucesso ($count registros)! Reabra a aba para atualizar.'),
+            backgroundColor: AppColors.woodBrown,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao restaurar backup: $e'),
             backgroundColor: AppColors.woodBrown,
           ),
         );

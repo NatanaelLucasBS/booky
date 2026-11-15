@@ -138,7 +138,7 @@ class _NoteEditorDialogState extends State<NoteEditorDialog> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.beige.withOpacity(0.3),
+                  color: AppColors.beige.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Row(
