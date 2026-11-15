@@ -7,7 +7,9 @@ import '../../data/repositories/note_repository_impl.dart';
 import '../../data/repositories/session_repository_impl.dart';
 import '../../data/repositories/settings_repository_impl.dart';
 import '../../data/repositories/shelf_repository_impl.dart';
+import '../../data/services/backup_sync_service.dart';
 import '../../data/services/book_api_service.dart';
+import '../../data/services/export_service.dart';
 import '../../data/services/notification_service.dart';
 import '../../data/services/ocr_service.dart';
 import '../../data/services/storage_service.dart';
@@ -18,6 +20,7 @@ import '../../domain/repositories/session_repository.dart';
 import '../../domain/repositories/settings_repository.dart';
 import '../../domain/repositories/shelf_repository.dart';
 import '../../domain/use_cases/delete_book_use_case.dart';
+import '../../domain/use_cases/export_library_use_case.dart';
 import '../../domain/use_cases/get_dashboard_stats_use_case.dart';
 import '../../domain/use_cases/register_loan_use_case.dart';
 import '../../domain/use_cases/return_loan_use_case.dart';
@@ -38,6 +41,8 @@ class ConfigureProviders {
     final ocrService = OcrService();
     final notificationService = NotificationService();
     await notificationService.init();
+    const exportService = ExportService();
+    final backupSyncService = BackupSyncService(storageService);
 
     // 2. Repositórios Reativos SSOT (Single Source of Truth)
     final bookRepository = BookRepositoryImpl(storageService);
@@ -77,6 +82,11 @@ class ConfigureProviders {
       settingsRepository: settingsRepository,
     );
 
+    final exportLibraryUseCase = ExportLibraryUseCase(
+      bookRepository: bookRepository,
+      exportService: exportService,
+    );
+
     return ConfigureProviders(
       providers: [
         // Services
@@ -84,6 +94,8 @@ class ConfigureProviders {
         Provider<BookApiService>.value(value: bookApiService),
         Provider<OcrService>.value(value: ocrService),
         Provider<NotificationService>.value(value: notificationService),
+        Provider<ExportService>.value(value: exportService),
+        Provider<BackupSyncService>.value(value: backupSyncService),
 
         // Repositories (SSOT)
         Provider<BookRepository>.value(value: bookRepository),
@@ -99,6 +111,7 @@ class ConfigureProviders {
         Provider<ReturnLoanUseCase>.value(value: returnLoanUseCase),
         Provider<DeleteBookUseCase>.value(value: deleteBookUseCase),
         Provider<GetDashboardStatsUseCase>.value(value: getDashboardStatsUseCase),
+        Provider<ExportLibraryUseCase>.value(value: exportLibraryUseCase),
       ],
     );
   }

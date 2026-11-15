@@ -10,6 +10,7 @@ import '../../../../domain/repositories/loan_repository.dart';
 import '../../../../domain/repositories/shelf_repository.dart';
 import '../viewmodels/library_viewmodel.dart';
 import '../widgets/advanced_filter_sheet.dart';
+import '../widgets/export_data_sheet.dart';
 import '../widgets/shelves_manager_sheet.dart';
 
 /// Tela 03: Minha Biblioteca
@@ -79,6 +80,11 @@ class _LibraryContentState extends State<_LibraryContent> {
       appBar: AppBar(
         title: const Text('Minha Biblioteca'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.file_upload_outlined),
+            tooltip: 'Exportação & Backup',
+            onPressed: () => ExportDataSheet.show(context),
+          ),
           IconButton(
             icon: const Icon(Icons.shelves),
             tooltip: 'Estantes Temáticas',
