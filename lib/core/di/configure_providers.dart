@@ -8,6 +8,7 @@ import '../../data/repositories/session_repository_impl.dart';
 import '../../data/repositories/settings_repository_impl.dart';
 import '../../data/repositories/shelf_repository_impl.dart';
 import '../../data/services/book_api_service.dart';
+import '../../data/services/notification_service.dart';
 import '../../data/services/ocr_service.dart';
 import '../../data/services/storage_service.dart';
 import '../../domain/repositories/book_repository.dart';
@@ -30,6 +31,8 @@ class ConfigureProviders {
 
     final bookApiService = BookApiService();
     final ocrService = OcrService();
+    final notificationService = NotificationService();
+    await notificationService.init();
 
     // 2. Repositórios SSOT
     final bookRepository = BookRepositoryImpl(storageService);
@@ -45,6 +48,7 @@ class ConfigureProviders {
         Provider<StorageService>.value(value: storageService),
         Provider<BookApiService>.value(value: bookApiService),
         Provider<OcrService>.value(value: ocrService),
+        Provider<NotificationService>.value(value: notificationService),
 
         // Repositories (SSOT)
         Provider<BookRepository>.value(value: bookRepository),

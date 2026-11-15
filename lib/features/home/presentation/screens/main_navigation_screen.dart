@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/theme_controller.dart';
 import '../screens/home_screen.dart';
-import '../../library/presentation/screens/library_screen.dart';
-import '../../profile/presentation/screens/profile_screen.dart';
+import '../../../library/presentation/screens/library_screen.dart';
 
-/// Container de navegação principal com BottomNavigationBar nas 3 abas essenciais:
-/// 1. Início (Dashboard & Leitura Atual)
-/// 2. Minha Biblioteca (Estante & Filtros)
-/// 3. Perfil & Ajustes (Preferências & Aparência)
+/// Container de navegação principal com BottomNavigationBar nas 2 abas essenciais:
+/// 1. Início (Dashboard de Leitura, Metas & Leitura Atual)
+/// 2. Minha Biblioteca (Estante Pessoal, Filtros Avançados & Gestão de Estantes)
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
@@ -25,11 +23,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       builder: (context, _) {
         final screens = [
           const HomeScreen(),
-          const LibraryScreen(),
-          ProfileScreen(
-            isDarkMode: themeController.isDarkMode,
-            onToggleTheme: () => themeController.toggleTheme(),
-          ),
+          LibraryScreen(),
         ];
 
         return Scaffold(
@@ -50,11 +44,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 icon: Icon(Icons.menu_book_outlined),
                 activeIcon: Icon(Icons.menu_book),
                 label: 'Biblioteca',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline),
-                activeIcon: Icon(Icons.person),
-                label: 'Perfil',
               ),
             ],
           ),

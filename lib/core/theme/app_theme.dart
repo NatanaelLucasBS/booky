@@ -177,7 +177,7 @@ abstract final class AppTheme {
       ),
 
       // Card Theme com borda sutil
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.lightCream,
         elevation: 0,
         margin: EdgeInsets.zero,
@@ -420,7 +420,7 @@ abstract final class AppTheme {
         ),
       ),
 
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.woodBrown,
         elevation: 0,
         margin: EdgeInsets.zero,
