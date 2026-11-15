@@ -1,2 +1,11 @@
-// Esqueleto arquitetural (Sprint 1 - ISSUE-N02)
-// TODO(Natanael): Definir abstract interface class BookRepository conforme Seção 4.4 do PLANO_DESENVOLVIMENTO.md.
+import '../models/book_model.dart';
+
+/// Contrato canônico do Repositório de Livros (SSOT).
+abstract interface class BookRepository {
+  Stream<List<BookModel>> watchBooks();
+  Stream<BookModel?> watchBookById(String bookId);
+  Future<List<BookModel>> getBooks();
+  Future<BookModel?> getBookById(String bookId);
+  Future<void> saveBook(BookModel book);
+  Future<void> deleteBook(String bookId);
+}

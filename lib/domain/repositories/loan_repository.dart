@@ -1,2 +1,10 @@
-// Esqueleto arquitetural (Sprint 1 - ISSUE-N02)
-// TODO(Natanael): Definir abstract interface class LoanRepository conforme Seção 4.4 do PLANO_DESENVOLVIMENTO.md.
+import '../models/loan_model.dart';
+
+/// Contrato canônico do Repositório de Empréstimos (SSOT).
+abstract interface class LoanRepository {
+  Stream<List<LoanModel>> watchLoans();
+  Stream<List<LoanModel>> watchLoansByBook(String bookId);
+  Future<LoanModel?> getActiveLoanByBook(String bookId);
+  Future<void> saveLoan(LoanModel loan);
+  Future<void> deleteLoansByBook(String bookId);
+}

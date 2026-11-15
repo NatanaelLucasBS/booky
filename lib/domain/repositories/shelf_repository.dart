@@ -1,2 +1,9 @@
-// Esqueleto arquitetural (Sprint 1 - ISSUE-N02)
-// TODO(Natanael): Definir abstract interface class ShelfRepository conforme Seção 4.4 do PLANO_DESENVOLVIMENTO.md.
+import '../models/shelf_model.dart';
+
+/// Contrato canônico do Repositório de Estantes Temáticas (SSOT).
+abstract interface class ShelfRepository {
+  Stream<List<ShelfModel>> watchShelves();
+  Future<List<ShelfModel>> getShelves();
+  Future<void> saveShelf(ShelfModel shelf);
+  Future<void> deleteShelf(String shelfId);
+}

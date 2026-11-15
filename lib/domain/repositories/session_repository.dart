@@ -1,2 +1,10 @@
-// Esqueleto arquitetural (Sprint 1 - ISSUE-N02)
-// TODO(Natanael): Definir abstract interface class SessionRepository conforme Seção 4.4 do PLANO_DESENVOLVIMENTO.md.
+import '../models/reading_session_model.dart';
+
+/// Contrato canônico do Repositório de Sessões de Leitura (SSOT).
+abstract interface class SessionRepository {
+  Stream<List<ReadingSessionModel>> watchSessions();
+  Stream<List<ReadingSessionModel>> watchSessionsByBook(String bookId);
+  Future<List<ReadingSessionModel>> getSessionsByBook(String bookId);
+  Future<void> addSession(ReadingSessionModel session);
+  Future<void> deleteSessionsByBook(String bookId);
+}

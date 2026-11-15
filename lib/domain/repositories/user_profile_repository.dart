@@ -1,2 +1,13 @@
-// Esqueleto arquitetural (Sprint 1 - ISSUE-N02)
-// TODO(Natanael): Definir abstract interface class UserProfileRepository conforme Seção 4.4 do PLANO_DESENVOLVIMENTO.md.
+import '../models/user_profile_model.dart';
+
+abstract interface class UserProfileRepository {
+  Stream<UserProfileModel?> watchProfile();
+  Future<UserProfileModel?> getProfile();
+  Future<void> saveProfile(UserProfileModel profile);
+  Future<void> updateAnnualGoal(int goal);
+  Future<void> updateDailyReminder({
+    required bool enabled,
+    required int hour,
+    required int minute,
+  });
+}
