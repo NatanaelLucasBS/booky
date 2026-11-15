@@ -1,126 +1,294 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:provider/provider.dart';
 
-/// Tela 07: Adicionar Livro
-/// Suporte a escaneamento ótico de código de barras / ISBN e cadastro manual detalhado.
-class AddBookScreen extends StatefulWidget {
-  const AddBookScreen({super.key});
+import '../../../../core/theme/app_colors.dart';
+import '../../../../data/services/book_api_service.dart';
+import '../../../../domain/models/book_model.dart';
+import '../../../../domain/models/enums.dart';
+import '../../../../domain/repositories/book_repository.dart';
+import '../../../../domain/repositories/shelf_repository.dart';
+import '../viewmodels/add_book_viewmodel.dart';
+
+/// Tela 07: Adicionar ou Editar Livro
+/// Catalogação via scanner ótico de ISBN (câmera) ou formulário manual completo.
+class AddBookScreen extends StatelessWidget {
+  final BookModel? bookToEdit;
+
+  const AddBookScreen({super.key, this.bookToEdit});
 
   @override
-  State<AddBookScreen> createState() => _AddBookScreenState();
+  Widget build(BuildContext context) {
+    final argBook = bookToEdit ?? (ModalRoute.of(context)?.settings.arguments as BookModel?);
+
+    return ChangeNotifierProvider(
+      create: (ctx) => AddBookViewModel(
+        bookRepository: ctx.read<BookRepository>(),
+        shelfRepository: ctx.read<ShelfRepository>(),
+        bookApiService: ctx.read<BookApiService>(),
+        initialBook: argBook,
+      )..loadShelves(),
+      child: const _AddBookContent(),
+    );
+  }
 }
 
-class _AddBookScreenState extends State<AddBookScreen> {
-  int _activeMode = 0; // 0: Escanear Código, 1: Cadastro Manual
+class _AddBookContent extends StatefulWidget {
+  const _AddBookContent();
 
+  @override
+  State<_AddBookContent> createState() => _AddBookContentState();
+}
+
+class _AddBookContentState extends State<_AddBookContent> {
   final _isbnQuickController = TextEditingController();
   final _titleController = TextEditingController();
   final _authorController = TextEditingController();
+  final _publisherController = TextEditingController();
+  final _yearController = TextEditingController();
   final _pagesController = TextEditingController();
   final _genreController = TextEditingController();
+  final _coverUrlController = TextEditingController();
+  final _synopsisController = TextEditingController();
+  final _tagInputController = TextEditingController();
 
-  String _selectedStatus = 'to-read';
+  MobileScannerController? _scannerController;
+  bool _isScannerPaused = false;
+  bool _controllersInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scannerController = MobileScannerController(
+      detectionSpeed: DetectionSpeed.noDuplicates,
+      facing: CameraFacing.back,
+      torchEnabled: false,
+    );
+  }
 
   @override
   void dispose() {
     _isbnQuickController.dispose();
     _titleController.dispose();
     _authorController.dispose();
+    _publisherController.dispose();
+    _yearController.dispose();
     _pagesController.dispose();
     _genreController.dispose();
+    _coverUrlController.dispose();
+    _synopsisController.dispose();
+    _tagInputController.dispose();
+    _scannerController?.dispose();
     super.dispose();
   }
 
-  void _lookupISBN() {
-    final query = _isbnQuickController.text.trim();
-    if (query.isEmpty) return;
-
-    // Simulação de busca rápida na base de dados de livros
-    setState(() {
-      _activeMode = 1; // Transita para o modo manual preenchido
-      _titleController.text = 'O Nome do Vento';
-      _authorController.text = 'Patrick Rothfuss';
-      _pagesController.text = '656';
-      _genreController.text = 'Fantasia Épica';
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Livro localizado pelo ISBN! Revise os dados abaixo.'),
-        backgroundColor: AppColors.darkBrown,
-      ),
-    );
+  void _syncControllersWithViewModel(AddBookViewModel vm) {
+    if (!_controllersInitialized && vm.initialBook != null) {
+      _titleController.text = vm.title;
+      _authorController.text = vm.author;
+      _publisherController.text = vm.publisher ?? '';
+      _yearController.text = vm.publishedYear?.toString() ?? '';
+      _pagesController.text = vm.totalPages > 0 ? vm.totalPages.toString() : '';
+      _genreController.text = vm.genre ?? '';
+      _coverUrlController.text = vm.coverUrl ?? '';
+      _synopsisController.text = vm.synopsis ?? '';
+      _isbnQuickController.text = vm.isbn;
+      _controllersInitialized = true;
+    }
   }
 
-  void _saveBook() {
-    if (_titleController.text.trim().isEmpty) {
+  Future<void> _handleIsbnLookup(String isbn) async {
+    final vm = context.read<AddBookViewModel>();
+    final success = await vm.lookupByIsbn(isbn);
+    if (!mounted) return;
+
+    if (success) {
+      _titleController.text = vm.title;
+      _authorController.text = vm.author;
+      _publisherController.text = vm.publisher ?? '';
+      _yearController.text = vm.publishedYear?.toString() ?? '';
+      _pagesController.text = vm.totalPages > 0 ? vm.totalPages.toString() : '';
+      _genreController.text = vm.genre ?? '';
+      _coverUrlController.text = vm.coverUrl ?? '';
+      _synopsisController.text = vm.synopsis ?? '';
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Por favor, informe ao menos o título do livro.'),
+          content: Text('Livro localizado pelo ISBN! Revise os dados abaixo.'),
           backgroundColor: AppColors.darkBrown,
         ),
       );
-      return;
+    } else if (vm.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(vm.errorMessage!),
+          backgroundColor: AppColors.darkBrown,
+        ),
+      );
+      // Retoma scanner caso tenha falhado
+      _isScannerPaused = false;
+      _scannerController?.start();
     }
+  }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('"${_titleController.text}" adicionado à sua biblioteca!'),
-        backgroundColor: AppColors.darkBrown,
-      ),
+  Future<void> _onBarcodeDetected(BarcodeCapture capture) async {
+    if (_isScannerPaused) return;
+
+    for (final barcode in capture.barcodes) {
+      final raw = barcode.rawValue;
+      if (raw != null && raw.isNotEmpty && BookApiService.isValidIsbn(raw)) {
+        setState(() => _isScannerPaused = true);
+        await _scannerController?.stop();
+        await _handleIsbnLookup(raw);
+        break;
+      }
+    }
+  }
+
+  Future<void> _onSave() async {
+    final vm = context.read<AddBookViewModel>();
+
+    vm.setTitle(_titleController.text);
+    vm.setAuthor(_authorController.text);
+    vm.setPublisher(_publisherController.text);
+    vm.setPublishedYear(int.tryParse(_yearController.text.trim()));
+    vm.setTotalPages(int.tryParse(_pagesController.text.trim()) ?? 0);
+    vm.setGenre(_genreController.text);
+    vm.setCoverUrl(_coverUrlController.text);
+    vm.setSynopsis(_synopsisController.text);
+
+    final success = await vm.saveBook();
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('"${vm.title}" salvo com sucesso na sua biblioteca!'),
+          backgroundColor: AppColors.darkBrown,
+        ),
+      );
+      Navigator.of(context).pop();
+    } else if (vm.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(vm.errorMessage!),
+          backgroundColor: AppColors.darkBrown,
+        ),
+      );
+    }
+  }
+
+  void _showCreateShelfDialog(BuildContext context, AddBookViewModel vm) {
+    final nameCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return AlertDialog(
+          title: const Text('Nova Estante Temática'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Nome da Estante (ex: Favoritos, Sci-Fi)',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: descCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Descrição (opcional)',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(),
+              child: const Text('CANCELAR'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameCtrl.text.trim().isNotEmpty) {
+                  await vm.createShelf(nameCtrl.text, descCtrl.text);
+                  if (context.mounted) Navigator.of(dialogCtx).pop();
+                }
+              },
+              child: const Text('CRIAR'),
+            ),
+          ],
+        );
+      },
     );
-
-    Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
+    final vm = context.watch<AddBookViewModel>();
+    _syncControllersWithViewModel(vm);
+
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isEditing = vm.initialBook != null;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Adicionar Livro'),
+        title: Text(isEditing ? 'Editar Livro' : 'Adicionar Livro'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Segmented Control de Modo
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.woodBrown : AppColors.beige.withOpacity(0.35),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildModeTab(
-                      title: 'ESCANEAR CÓDIGO',
-                      isSelected: _activeMode == 0,
-                      onTap: () => setState(() => _activeMode = 0),
-                      isDark: isDark,
+            // Segmented Control de Modo (somente no cadastro novo)
+            if (!isEditing) ...[
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.woodBrown : AppColors.beige.withOpacity(0.35),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildModeTab(
+                        title: 'ESCANEAR CÓDIGO',
+                        isSelected: vm.activeMode == 0,
+                        onTap: () {
+                          vm.setMode(0);
+                          setState(() => _isScannerPaused = false);
+                          _scannerController?.start();
+                        },
+                        isDark: isDark,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: _buildModeTab(
-                      title: 'CADASTRO MANUAL',
-                      isSelected: _activeMode == 1,
-                      onTap: () => setState(() => _activeMode = 1),
-                      isDark: isDark,
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: _buildModeTab(
+                        title: 'CADASTRO MANUAL',
+                        isSelected: vm.activeMode == 1,
+                        onTap: () {
+                          vm.setMode(1);
+                          setState(() => _isScannerPaused = true);
+                          _scannerController?.stop();
+                        },
+                        isDark: isDark,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+              const SizedBox(height: 24),
+            ],
 
-            const SizedBox(height: 24),
-
-            // Conteúdo do Modo Selecionado
-            if (_activeMode == 0) _buildScannerView(theme, isDark) else _buildManualView(theme, isDark),
+            // Conteúdo do Modo
+            if (!isEditing && vm.activeMode == 0)
+              _buildScannerView(vm, theme, isDark)
+            else
+              _buildManualView(vm, theme, isDark, isEditing),
           ],
         ),
       ),
@@ -159,15 +327,15 @@ class _AddBookScreenState extends State<AddBookScreen> {
     );
   }
 
-  // --- MODO 1: SCANNER ---
-  Widget _buildScannerView(ThemeData theme, bool isDark) {
+  // --- MODO 1: SCANNER COM CÂMERA REAL ---
+  Widget _buildScannerView(AddBookViewModel vm, ThemeData theme, bool isDark) {
     return Column(
       children: [
-        // Visor de Câmera com Cantos e Linha Laser
+        // Visor de Câmera Real com Cantos e Linha Laser
         Container(
-          width: 250,
-          height: 250,
-          margin: const EdgeInsets.symmetric(vertical: 20),
+          width: 260,
+          height: 260,
+          margin: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
             color: isDark ? AppColors.woodBrown.withOpacity(0.4) : AppColors.beige.withOpacity(0.2),
             borderRadius: BorderRadius.circular(4),
@@ -175,41 +343,52 @@ class _AddBookScreenState extends State<AddBookScreen> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Cantoneiras estéticas do visor
+              // Câmera MobileScanner Real
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: MobileScanner(
+                  controller: _scannerController,
+                  onDetect: _onBarcodeDetected,
+                ),
+              ),
+
+              // Cantoneiras estéticas do visor Stitch
               Positioned(
-                top: 12,
-                left: 12,
+                top: 10,
+                left: 10,
                 child: _buildCorner(isTop: true, isLeft: true, isDark: isDark),
               ),
               Positioned(
-                top: 12,
-                right: 12,
+                top: 10,
+                right: 10,
                 child: _buildCorner(isTop: true, isLeft: false, isDark: isDark),
               ),
               Positioned(
-                bottom: 12,
-                left: 12,
+                bottom: 10,
+                left: 10,
                 child: _buildCorner(isTop: false, isLeft: true, isDark: isDark),
               ),
               Positioned(
-                bottom: 12,
-                right: 12,
+                bottom: 10,
+                right: 10,
                 child: _buildCorner(isTop: false, isLeft: false, isDark: isDark),
-              ),
-
-              // Ícone central atenuado
-              Icon(
-                Icons.qr_code_scanner,
-                size: 70,
-                color: (isDark ? AppColors.beige : AppColors.mediumBrown).withOpacity(0.3),
               ),
 
               // Linha Laser Horizontal
               Container(
-                width: 190,
+                width: 200,
                 height: 1.5,
-                color: isDark ? AppColors.beige : AppColors.woodBrown,
+                color: isDark ? AppColors.lightCream.withOpacity(0.8) : AppColors.darkBrown.withOpacity(0.8),
               ),
+
+              // Indicador de Carregamento ao buscar ISBN
+              if (vm.isLookingUp)
+                Container(
+                  color: Colors.black54,
+                  child: const Center(
+                    child: CircularProgressIndicator(color: AppColors.lightCream),
+                  ),
+                ),
             ],
           ),
         ),
@@ -220,7 +399,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
           style: theme.textTheme.bodyMedium,
         ),
 
-        const SizedBox(height: 32),
+        const SizedBox(height: 24),
 
         // Digitação rápida de ISBN
         Align(
@@ -233,16 +412,30 @@ class _AddBookScreenState extends State<AddBookScreen> {
         const SizedBox(height: 8),
         TextField(
           controller: _isbnQuickController,
-          keyboardType: TextInputType.number,
+          keyboardType: TextInputType.text,
           decoration: InputDecoration(
-            hintText: '978-85-8057-340-4',
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.arrow_forward, size: 20),
-              color: isDark ? AppColors.lightCream : AppColors.darkBrown,
-              onPressed: _lookupISBN,
-            ),
+            hintText: '978-85-325-1101-0',
+            suffixIcon: vm.isLookingUp
+                ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.arrow_forward, size: 20),
+                    color: isDark ? AppColors.lightCream : AppColors.darkBrown,
+                    onPressed: () {
+                      final text = _isbnQuickController.text.trim();
+                      if (text.isNotEmpty) _handleIsbnLookup(text);
+                    },
+                  ),
           ),
-          onSubmitted: (_) => _lookupISBN(),
+          onSubmitted: (text) {
+            if (text.trim().isNotEmpty) _handleIsbnLookup(text.trim());
+          },
         ),
       ],
     );
@@ -251,30 +444,65 @@ class _AddBookScreenState extends State<AddBookScreen> {
   Widget _buildCorner({required bool isTop, required bool isLeft, required bool isDark}) {
     final color = isDark ? AppColors.lightCream : AppColors.darkBrown;
     return Container(
-      width: 20,
-      height: 20,
+      width: 22,
+      height: 22,
       decoration: BoxDecoration(
         border: Border(
-          top: isTop ? BorderSide(color: color, width: 2.0) : BorderSide.none,
-          bottom: !isTop ? BorderSide(color: color, width: 2.0) : BorderSide.none,
-          left: isLeft ? BorderSide(color: color, width: 2.0) : BorderSide.none,
-          right: !isLeft ? BorderSide(color: color, width: 2.0) : BorderSide.none,
+          top: isTop ? BorderSide(color: color, width: 2.5) : BorderSide.none,
+          bottom: !isTop ? BorderSide(color: color, width: 2.5) : BorderSide.none,
+          left: isLeft ? BorderSide(color: color, width: 2.5) : BorderSide.none,
+          right: !isLeft ? BorderSide(color: color, width: 2.5) : BorderSide.none,
         ),
       ),
     );
   }
 
-  // --- MODO 2: MANUAL ---
-  Widget _buildManualView(ThemeData theme, bool isDark) {
+  // --- MODO 2: CADASTRO MANUAL / EDIÇÃO ---
+  Widget _buildManualView(
+    AddBookViewModel vm,
+    ThemeData theme,
+    bool isDark,
+    bool isEditing,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildFieldLabel('Título do Livro'),
+        // Pré-visualização da Capa se houver coverUrl
+        if (_coverUrlController.text.trim().isNotEmpty)
+          Center(
+            child: Container(
+              width: 100,
+              height: 150,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: isDark ? AppColors.woodBrown : AppColors.beige,
+                  width: 1.0,
+                ),
+                color: isDark ? AppColors.woodBrown : AppColors.beige.withOpacity(0.3),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: Image.network(
+                  _coverUrlController.text.trim(),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.broken_image,
+                    size: 40,
+                    color: AppColors.mediumBrown,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+        _buildFieldLabel('Título do Livro *'),
         const SizedBox(height: 6),
         TextField(
           controller: _titleController,
           decoration: const InputDecoration(
-            hintText: 'Ex: Memórias Póstumas de Brás Cubas',
+            hintText: 'Ex: Dom Casmurro',
           ),
         ),
 
@@ -303,7 +531,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                     controller: _pagesController,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      hintText: 'Ex: 312',
+                      hintText: 'Ex: 256',
                     ),
                   ),
                 ],
@@ -319,7 +547,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                   TextField(
                     controller: _genreController,
                     decoration: const InputDecoration(
-                      hintText: 'Ex: Romance Clássico',
+                      hintText: 'Ex: Romance',
                     ),
                   ),
                 ],
@@ -330,24 +558,212 @@ class _AddBookScreenState extends State<AddBookScreen> {
 
         const SizedBox(height: 16),
 
-        _buildFieldLabel('Status Inicial na Estante'),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildFieldLabel('Editora'),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _publisherController,
+                    decoration: const InputDecoration(
+                      hintText: 'Ex: Companhia das Letras',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildFieldLabel('Ano de Publicação'),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _yearController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      hintText: 'Ex: 1899',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+
+        _buildFieldLabel('URL da Imagem da Capa'),
+        const SizedBox(height: 6),
+        TextField(
+          controller: _coverUrlController,
+          onChanged: (_) => setState(() {}),
+          decoration: const InputDecoration(
+            hintText: 'https://exemplo.com/capa.jpg',
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        _buildFieldLabel('Formato do Livro (Tema 6)'),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildChoiceChip(
+                label: 'Físico',
+                isSelected: vm.format == BookFormat.physical,
+                onTap: () => vm.setFormat(BookFormat.physical),
+                isDark: isDark,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildChoiceChip(
+                label: 'Digital (E-book)',
+                isSelected: vm.format == BookFormat.digital,
+                onTap: () => vm.setFormat(BookFormat.digital),
+                isDark: isDark,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+
+        // Status Canônicos do Tema 6 (4 opções mutuamente exclusivas)
+        _buildFieldLabel('Status na Estante'),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: [
-            _buildStatusChip('Quero Ler', 'to-read', isDark),
-            _buildStatusChip('Lendo', 'reading', isDark),
-            _buildStatusChip('Lido', 'read', isDark),
-            _buildStatusChip('Emprestado', 'loaned', isDark),
+            _buildStatusChip('Quero Ler', BookStatus.wantToRead, vm.status, vm, isDark),
+            _buildStatusChip('Lendo', BookStatus.reading, vm.status, vm, isDark),
+            _buildStatusChip('Lido', BookStatus.read, vm.status, vm, isDark),
+            _buildStatusChip('Abandonado', BookStatus.abandoned, vm.status, vm, isDark),
           ],
+        ),
+
+        const SizedBox(height: 20),
+
+        // Estantes Temáticas
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildFieldLabel('Estantes Temáticas'),
+            TextButton.icon(
+              onPressed: () => _showCreateShelfDialog(context, vm),
+              icon: const Icon(Icons.add, size: 14),
+              label: const Text('NOVA ESTANTE', style: TextStyle(fontSize: 11)),
+            ),
+          ],
+        ),
+        if (vm.availableShelves.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Text(
+              'Nenhuma estante temática criada. Clique em "Nova Estante" para organizar por temas.',
+              style: theme.textTheme.bodySmall,
+            ),
+          )
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: vm.availableShelves.map((shelf) {
+              final isSelected = vm.selectedShelfIds.contains(shelf.id);
+              return FilterChip(
+                label: Text(shelf.name),
+                selected: isSelected,
+                onSelected: (_) => vm.toggleShelf(shelf.id),
+                selectedColor: isDark ? AppColors.lightCream : AppColors.darkBrown,
+                labelStyle: TextStyle(
+                  fontSize: 11,
+                  color: isSelected
+                      ? (isDark ? AppColors.darkBrown : AppColors.lightCream)
+                      : (isDark ? AppColors.lightCream : AppColors.darkBrown),
+                ),
+              );
+            }).toList(),
+          ),
+
+        const SizedBox(height: 20),
+
+        // Tags Customizadas
+        _buildFieldLabel('Tags Customizadas'),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _tagInputController,
+                decoration: const InputDecoration(
+                  hintText: 'Adicionar tag (ex: clássico, nacional)',
+                ),
+                onSubmitted: (tag) {
+                  if (tag.trim().isNotEmpty) {
+                    vm.addTag(tag);
+                    _tagInputController.clear();
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton.filled(
+              icon: const Icon(Icons.add, size: 18),
+              onPressed: () {
+                final tag = _tagInputController.text.trim();
+                if (tag.isNotEmpty) {
+                  vm.addTag(tag);
+                  _tagInputController.clear();
+                }
+              },
+            ),
+          ],
+        ),
+        if (vm.tags.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: vm.tags.map((tag) {
+              return Chip(
+                label: Text('#$tag'),
+                onDeleted: () => vm.removeTag(tag),
+                deleteIconColor: isDark ? AppColors.beige : AppColors.mediumBrown,
+              );
+            }).toList(),
+          ),
+        ],
+
+        const SizedBox(height: 20),
+
+        _buildFieldLabel('Sinopse'),
+        const SizedBox(height: 6),
+        TextField(
+          controller: _synopsisController,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            hintText: 'Breve resumo ou sinopse da obra...',
+          ),
         ),
 
         const SizedBox(height: 32),
 
         ElevatedButton(
-          onPressed: _saveBook,
-          child: const Text('SALVAR NA ESTANTE'),
+          onPressed: vm.isSaving ? null : _onSave,
+          child: vm.isSaving
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.lightCream),
+                )
+              : Text(isEditing ? 'SALVAR ALTERAÇÕES' : 'SALVAR NA ESTANTE'),
         ),
       ],
     );
@@ -365,15 +781,58 @@ class _AddBookScreenState extends State<AddBookScreen> {
     );
   }
 
-  Widget _buildStatusChip(String label, String value, bool isDark) {
-    final isSelected = _selectedStatus == value;
+  Widget _buildChoiceChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
     final activeBg = isDark ? AppColors.lightCream : AppColors.darkBrown;
     final activeFg = isDark ? AppColors.darkBrown : AppColors.lightCream;
     final inactiveBorder = isDark ? AppColors.woodBrown : AppColors.beige;
     final inactiveFg = isDark ? AppColors.beige : AppColors.woodBrown;
 
     return GestureDetector(
-      onTap: () => setState(() => _selectedStatus = value),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? activeBg : Colors.transparent,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: isSelected ? activeBg : inactiveBorder,
+            width: 1.0,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            letterSpacing: 0.8,
+            color: isSelected ? activeFg : inactiveFg,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(
+    String label,
+    BookStatus status,
+    BookStatus currentStatus,
+    AddBookViewModel vm,
+    bool isDark,
+  ) {
+    final isSelected = currentStatus == status;
+    final activeBg = isDark ? AppColors.lightCream : AppColors.darkBrown;
+    final activeFg = isDark ? AppColors.darkBrown : AppColors.lightCream;
+    final inactiveBorder = isDark ? AppColors.woodBrown : AppColors.beige;
+    final inactiveFg = isDark ? AppColors.beige : AppColors.woodBrown;
+
+    return GestureDetector(
+      onTap: () => vm.setStatus(status),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
