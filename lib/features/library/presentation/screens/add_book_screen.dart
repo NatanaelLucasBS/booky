@@ -523,7 +523,7 @@ class _AddBookContentState extends State<_AddBookContent> {
                 child: Image.network(
                   _coverUrlController.text.trim(),
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Icon(
+                  errorBuilder: (_, _, _) => const Icon(
                     Icons.broken_image,
                     size: 40,
                     color: AppColors.mediumBrown,

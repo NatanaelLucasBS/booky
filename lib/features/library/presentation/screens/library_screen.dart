@@ -341,7 +341,7 @@ class _LibraryContentState extends State<_LibraryContent> {
                             fit: BoxFit.cover,
                             width: double.infinity,
                             height: double.infinity,
-                            errorBuilder: (_, __, ___) => _buildPlaceholderCover(book, isDark),
+                            errorBuilder: (_, _, _) => _buildPlaceholderCover(book, isDark),
                           )
                         : _buildPlaceholderCover(book, isDark),
                   ),

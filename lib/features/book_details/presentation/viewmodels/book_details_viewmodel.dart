@@ -260,8 +260,18 @@ class BookDetailsViewModel extends ChangeNotifier {
     _successMessage = null;
   }
 
+  bool _disposed = false;
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) {
+      super.notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
+    _disposed = true;
     _bookSub?.cancel();
     _notesSub?.cancel();
     _loansSub?.cancel();

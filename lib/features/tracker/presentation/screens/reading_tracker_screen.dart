@@ -454,7 +454,7 @@ class _ReadingTrackerView extends StatelessWidget {
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount: vm.availableBooks.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, _) => const Divider(height: 1),
                   itemBuilder: (c, idx) {
                     final item = vm.availableBooks[idx];
                     final isCurrent = item.id == vm.selectedBook?.id;

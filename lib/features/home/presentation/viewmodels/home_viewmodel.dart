@@ -141,8 +141,18 @@ class HomeViewModel extends ChangeNotifier {
     }
   }
 
+  bool _disposed = false;
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) {
+      super.notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
+    _disposed = true;
     _booksSub?.cancel();
     _sessionsSub?.cancel();
     _loansSub?.cancel();

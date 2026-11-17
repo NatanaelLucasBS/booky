@@ -345,8 +345,18 @@ class LibraryViewModel extends ChangeNotifier {
     return useCase.execute(rawJson);
   }
 
+  bool _disposed = false;
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) {
+      super.notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
+    _disposed = true;
     _booksSub?.cancel();
     _loansSub?.cancel();
     _shelvesSub?.cancel();

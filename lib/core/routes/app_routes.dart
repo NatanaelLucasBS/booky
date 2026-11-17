@@ -13,13 +13,6 @@ abstract final class AppRoutes {
   static const String tracker = '/tracker';
   static const String addBook = '/add-book';
 
-  static Map<String, WidgetBuilder> get routes => {
-        main: (context) => const MainNavigationScreen(),
-        bookDetails: (context) => const BookDetailsScreen(),
-        tracker: (context) => const ReadingTrackerScreen(),
-        addBook: (context) => const AddBookScreen(),
-      };
-
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case main:

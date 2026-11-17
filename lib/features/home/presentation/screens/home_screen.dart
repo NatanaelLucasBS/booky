@@ -322,7 +322,7 @@ class _HomeView extends StatelessWidget {
                             width: 88,
                             height: 132,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _buildCoverPlaceholder(book, theme),
+                            errorBuilder: (_, _, _) => _buildCoverPlaceholder(book, theme),
                           ),
                         )
                       else
@@ -490,7 +490,7 @@ class _HomeView extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: books.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
         itemBuilder: (ctx, idx) {
           final b = books[idx];
           return InkWell(

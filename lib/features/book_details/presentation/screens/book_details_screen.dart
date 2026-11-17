@@ -243,7 +243,7 @@ class _BookDetailsContentState extends State<_BookDetailsContent> {
                         ? Image.network(
                             book.coverUrl!,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _buildPlaceholderCover(book, isDark),
+                            errorBuilder: (_, _, _) => _buildPlaceholderCover(book, isDark),
                           )
                         : _buildPlaceholderCover(book, isDark),
                   ),

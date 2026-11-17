@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:booky/main.dart';
@@ -26,80 +27,121 @@ import 'package:booky/domain/use_cases/delete_book_use_case.dart';
 import 'package:booky/domain/use_cases/export_library_use_case.dart';
 import 'package:booky/domain/use_cases/get_dashboard_stats_use_case.dart';
 import 'package:booky/domain/use_cases/register_loan_use_case.dart';
+import 'package:booky/domain/use_cases/restore_backup_use_case.dart';
 import 'package:booky/domain/use_cases/return_loan_use_case.dart';
 
 void main() {
-  testWidgets('BookyApp smoke test inicializa com sucesso', (WidgetTester tester) async {
-    final storage = InMemoryStorageService();
-    final bookRepo = BookRepositoryImpl(storage);
-    final shelfRepo = ShelfRepositoryImpl(storage);
-    final sessionRepo = SessionRepositoryImpl(storage);
-    final noteRepo = NoteRepositoryImpl(storage);
-    final loanRepo = LoanRepositoryImpl(storage);
-    final settingsRepo = SettingsRepositoryImpl(storage);
-    final notificationService = NotificationService();
-    const exportService = ExportService();
+  testWidgets(
+    'BookyApp inicializa NavigationBar M3, alterna abas, abre /add-book e muda tema Light/Dark',
+    (WidgetTester tester) async {
+      final storage = InMemoryStorageService();
+      final bookRepo = BookRepositoryImpl(storage);
+      final shelfRepo = ShelfRepositoryImpl(storage);
+      final sessionRepo = SessionRepositoryImpl(storage);
+      final noteRepo = NoteRepositoryImpl(storage);
+      final loanRepo = LoanRepositoryImpl(storage);
+      final settingsRepo = SettingsRepositoryImpl(storage);
+      final notificationService = NotificationService();
+      const exportService = ExportService();
+      final backupSyncService = BackupSyncService(storage);
 
-    final di = ConfigureProviders(
-      providers: [
-        ChangeNotifierProvider<ThemeController>.value(value: themeController),
-        Provider<StorageService>.value(value: storage),
-        Provider<BookApiService>.value(value: BookApiService()),
-        Provider<OcrService>.value(value: OcrService()),
-        Provider<NotificationService>.value(value: notificationService),
-        Provider<ExportService>.value(value: exportService),
-        Provider<BackupSyncService>.value(value: BackupSyncService(storage)),
-        Provider<BookRepository>.value(value: bookRepo),
-        Provider<ShelfRepository>.value(value: shelfRepo),
-        Provider<SessionRepository>.value(value: sessionRepo),
-        Provider<NoteRepository>.value(value: noteRepo),
-        Provider<LoanRepository>.value(value: loanRepo),
-        Provider<SettingsRepository>.value(value: settingsRepo),
-        Provider<SaveReadingSessionUseCase>.value(
-          value: SaveReadingSessionUseCase(
-            bookRepository: bookRepo,
-            sessionRepository: sessionRepo,
+      final di = ConfigureProviders(
+        providers: [
+          ChangeNotifierProvider<ThemeController>.value(value: themeController),
+          Provider<StorageService>.value(value: storage),
+          Provider<BookApiService>.value(value: BookApiService()),
+          Provider<OcrService>.value(value: OcrService()),
+          Provider<NotificationService>.value(value: notificationService),
+          Provider<ExportService>.value(value: exportService),
+          Provider<BackupSyncService>.value(value: backupSyncService),
+          Provider<BookRepository>.value(value: bookRepo),
+          Provider<ShelfRepository>.value(value: shelfRepo),
+          Provider<SessionRepository>.value(value: sessionRepo),
+          Provider<NoteRepository>.value(value: noteRepo),
+          Provider<LoanRepository>.value(value: loanRepo),
+          Provider<SettingsRepository>.value(value: settingsRepo),
+          Provider<SaveReadingSessionUseCase>.value(
+            value: SaveReadingSessionUseCase(
+              bookRepository: bookRepo,
+              sessionRepository: sessionRepo,
+            ),
           ),
-        ),
-        Provider<RegisterLoanUseCase>.value(
-          value: RegisterLoanUseCase(
-            loanRepository: loanRepo,
-            notificationService: notificationService,
+          Provider<RegisterLoanUseCase>.value(
+            value: RegisterLoanUseCase(
+              loanRepository: loanRepo,
+              notificationService: notificationService,
+            ),
           ),
-        ),
-        Provider<ReturnLoanUseCase>.value(
-          value: ReturnLoanUseCase(
-            loanRepository: loanRepo,
-            notificationService: notificationService,
+          Provider<ReturnLoanUseCase>.value(
+            value: ReturnLoanUseCase(
+              loanRepository: loanRepo,
+              notificationService: notificationService,
+            ),
           ),
-        ),
-        Provider<DeleteBookUseCase>.value(
-          value: DeleteBookUseCase(
-            bookRepository: bookRepo,
-            noteRepository: noteRepo,
-            loanRepository: loanRepo,
-            sessionRepository: sessionRepo,
+          Provider<DeleteBookUseCase>.value(
+            value: DeleteBookUseCase(
+              bookRepository: bookRepo,
+              noteRepository: noteRepo,
+              loanRepository: loanRepo,
+              sessionRepository: sessionRepo,
+            ),
           ),
-        ),
-        Provider<GetDashboardStatsUseCase>.value(
-          value: GetDashboardStatsUseCase(
-            bookRepository: bookRepo,
-            sessionRepository: sessionRepo,
-            loanRepository: loanRepo,
-            settingsRepository: settingsRepo,
+          Provider<GetDashboardStatsUseCase>.value(
+            value: GetDashboardStatsUseCase(
+              bookRepository: bookRepo,
+              sessionRepository: sessionRepo,
+              loanRepository: loanRepo,
+              settingsRepository: settingsRepo,
+            ),
           ),
-        ),
-        Provider<ExportLibraryUseCase>.value(
-          value: ExportLibraryUseCase(
-            bookRepository: bookRepo,
-            exportService: exportService,
+          Provider<ExportLibraryUseCase>.value(
+            value: ExportLibraryUseCase(
+              bookRepository: bookRepo,
+              exportService: exportService,
+            ),
           ),
-        ),
-      ],
-    );
+          Provider<RestoreBackupUseCase>.value(
+            value: RestoreBackupUseCase(
+              backupSyncService: backupSyncService,
+              onReloadRepositories: [
+                bookRepo.reload,
+                shelfRepo.reload,
+                sessionRepo.reload,
+                noteRepo.reload,
+                loanRepo.reload,
+                settingsRepo.reload,
+              ],
+            ),
+          ),
+        ],
+      );
 
-    await tester.pumpWidget(BookyApp(di: di));
-    await tester.pumpAndSettle();
-    expect(find.text('Início'), findsWidgets);
-  });
+      await tester.pumpWidget(BookyApp(di: di));
+      await tester.pumpAndSettle();
+
+      // 1. Verifica NavigationBar Material 3 e aba inicial
+      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.text('Início'), findsWidgets);
+
+      // 2. Alterna para a aba Biblioteca
+      await tester.tap(find.text('Biblioteca'));
+      await tester.pumpAndSettle();
+      expect(find.text('Minha Biblioteca'), findsOneWidget);
+
+      // 3. Alterna Light <-> Dark Mode via ThemeController
+      themeController.toggleTheme();
+      await tester.pumpAndSettle();
+      expect(themeController.isDarkMode, isTrue);
+
+      themeController.toggleTheme();
+      await tester.pumpAndSettle();
+      expect(themeController.isDarkMode, isFalse);
+
+      // 4. Abre rota /add-book via FloatingActionButton (onGenerateRoute)
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Adicionar Livro'), findsOneWidget);
+    },
+  );
 }

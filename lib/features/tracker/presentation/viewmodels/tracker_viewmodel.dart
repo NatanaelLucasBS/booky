@@ -274,8 +274,18 @@ class TrackerViewModel extends ChangeNotifier with WidgetsBindingObserver {
     _successMessage = null;
   }
 
+  bool _disposed = false;
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) {
+      super.notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
+    _disposed = true;
     try {
       WidgetsBinding.instance.removeObserver(this);
     } catch (_) {}

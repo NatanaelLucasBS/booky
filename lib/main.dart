@@ -32,7 +32,6 @@ class BookyApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: themeController.themeMode,
             initialRoute: AppRoutes.initial,
-            routes: AppRoutes.routes,
             onGenerateRoute: AppRoutes.onGenerateRoute,
           );
         },
