@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import '../../../../data/services/backup_sync_service.dart';
+import '../../../../data/services/export_service.dart';
 import '../../../../domain/models/book_model.dart';
 import '../../../../domain/models/enums.dart';
 import '../../../../domain/models/loan_model.dart';
@@ -7,6 +9,8 @@ import '../../../../domain/models/shelf_model.dart';
 import '../../../../domain/repositories/book_repository.dart';
 import '../../../../domain/repositories/loan_repository.dart';
 import '../../../../domain/repositories/shelf_repository.dart';
+import '../../../../domain/use_cases/export_library_use_case.dart';
+import '../../../../domain/use_cases/restore_backup_use_case.dart';
 
 /// Filtros avançados combinados para o modal de busca
 class AdvancedFilters {
@@ -83,6 +87,9 @@ class LibraryViewModel extends ChangeNotifier {
   final BookRepository _bookRepository;
   final LoanRepository _loanRepository;
   final ShelfRepository _shelfRepository;
+  final ExportLibraryUseCase? _exportLibraryUseCase;
+  final BackupSyncService? _backupSyncService;
+  final RestoreBackupUseCase? _restoreBackupUseCase;
 
   StreamSubscription<List<BookModel>>? _booksSub;
   StreamSubscription<List<LoanModel>>? _loansSub;
@@ -111,9 +118,15 @@ class LibraryViewModel extends ChangeNotifier {
     required BookRepository bookRepository,
     required LoanRepository loanRepository,
     required ShelfRepository shelfRepository,
+    ExportLibraryUseCase? exportLibraryUseCase,
+    BackupSyncService? backupSyncService,
+    RestoreBackupUseCase? restoreBackupUseCase,
   })  : _bookRepository = bookRepository,
         _loanRepository = loanRepository,
-        _shelfRepository = shelfRepository {
+        _shelfRepository = shelfRepository,
+        _exportLibraryUseCase = exportLibraryUseCase,
+        _backupSyncService = backupSyncService,
+        _restoreBackupUseCase = restoreBackupUseCase {
     _initSubscriptions();
   }
 
@@ -285,9 +298,51 @@ class LibraryViewModel extends ChangeNotifier {
 
   Future<void> deleteShelf(String shelfId) async {
     await _shelfRepository.deleteShelf(shelfId);
+
+    final affectedBooks =
+        _allBooks.where((b) => b.shelfIds.contains(shelfId)).toList();
+    for (final book in affectedBooks) {
+      final updatedShelfIds =
+          book.shelfIds.where((id) => id != shelfId).toList();
+      await _bookRepository.saveBook(
+        book.copyWith(
+          shelfIds: updatedShelfIds,
+          updatedAt: DateTime.now(),
+        ),
+      );
+    }
+
     if (_selectedShelfId == shelfId) {
       _selectedShelfId = null;
+      notifyListeners();
     }
+  }
+
+  Future<void> exportLibrary({
+    required ExportScope scope,
+    required ExportFormat format,
+  }) async {
+    final useCase = _exportLibraryUseCase;
+    if (useCase == null) {
+      throw StateError('Serviço de exportação indisponível.');
+    }
+    await useCase.execute(scope: scope, format: format);
+  }
+
+  Future<void> exportBackup() async {
+    final service = _backupSyncService;
+    if (service == null) {
+      throw StateError('Serviço de backup indisponível.');
+    }
+    await service.exportBackupAndShare();
+  }
+
+  Future<int> restoreBackup(String rawJson) async {
+    final useCase = _restoreBackupUseCase;
+    if (useCase == null) {
+      throw StateError('Serviço de restauração indisponível.');
+    }
+    return useCase.execute(rawJson);
   }
 
   @override

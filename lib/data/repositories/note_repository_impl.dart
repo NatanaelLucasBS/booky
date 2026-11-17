@@ -21,6 +21,12 @@ class NoteRepositoryImpl implements NoteRepository {
     _controller.add(List.unmodifiable(_cache));
   }
 
+  /// Recarrega o cache a partir do StorageService e notifica os streams SSOT.
+  Future<void> reload() async {
+    _initialized = false;
+    await _ensureInitialized();
+  }
+
   @override
   Stream<List<NoteModel>> watchNotesByBook(String bookId) async* {
     await _ensureInitialized();

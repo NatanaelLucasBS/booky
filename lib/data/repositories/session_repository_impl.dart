@@ -21,6 +21,12 @@ class SessionRepositoryImpl implements SessionRepository {
     _controller.add(List.unmodifiable(_cache));
   }
 
+  /// Recarrega o cache a partir do StorageService e notifica os streams SSOT.
+  Future<void> reload() async {
+    _initialized = false;
+    await _ensureInitialized();
+  }
+
   @override
   Stream<List<ReadingSessionModel>> watchSessions() async* {
     await _ensureInitialized();

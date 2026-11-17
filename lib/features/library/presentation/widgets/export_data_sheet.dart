@@ -1,23 +1,44 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../data/services/backup_sync_service.dart';
 import '../../../../data/services/export_service.dart';
-import '../../../../domain/use_cases/export_library_use_case.dart';
 
 /// Modal bottom sheet para Exportação (PDF/CSV) e Backup JSON no padrão Stitch.
 class ExportDataSheet extends StatefulWidget {
-  const ExportDataSheet({super.key});
+  final Future<void> Function({
+    required ExportScope scope,
+    required ExportFormat format,
+  }) onExport;
+  final Future<void> Function() onBackup;
+  final Future<int> Function(String rawJson) onRestore;
 
-  static Future<void> show(BuildContext context) {
+  const ExportDataSheet({
+    super.key,
+    required this.onExport,
+    required this.onBackup,
+    required this.onRestore,
+  });
+
+  static Future<void> show(
+    BuildContext context, {
+    required Future<void> Function({
+      required ExportScope scope,
+      required ExportFormat format,
+    }) onExport,
+    required Future<void> Function() onBackup,
+    required Future<int> Function(String rawJson) onRestore,
+  }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
       ),
-      builder: (_) => const ExportDataSheet(),
+      builder: (_) => ExportDataSheet(
+        onExport: onExport,
+        onBackup: onBackup,
+        onRestore: onRestore,
+      ),
     );
   }
 
@@ -186,8 +207,7 @@ class _ExportDataSheetState extends State<ExportDataSheet> {
   Future<void> _handleExport() async {
     setState(() => _isProcessing = true);
     try {
-      final exportUseCase = context.read<ExportLibraryUseCase>();
-      await exportUseCase.execute(
+      await widget.onExport(
         scope: _selectedScope,
         format: _selectedFormat,
       );
@@ -217,8 +237,7 @@ class _ExportDataSheetState extends State<ExportDataSheet> {
   Future<void> _handleBackup() async {
     setState(() => _isProcessing = true);
     try {
-      final backupService = context.read<BackupSyncService>();
-      await backupService.exportBackupAndShare();
+      await widget.onBackup();
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -289,13 +308,12 @@ class _ExportDataSheetState extends State<ExportDataSheet> {
   Future<void> _handleRestore(String rawJson) async {
     setState(() => _isProcessing = true);
     try {
-      final backupService = context.read<BackupSyncService>();
-      final count = await backupService.restoreFromJson(rawJson);
+      final count = await widget.onRestore(rawJson);
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Backup restaurado com sucesso ($count registros)! Reabra a aba para atualizar.'),
+            content: Text('Backup restaurado com sucesso ($count registros)!'),
             backgroundColor: AppColors.woodBrown,
           ),
         );

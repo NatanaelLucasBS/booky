@@ -24,6 +24,7 @@ import '../../domain/use_cases/delete_book_use_case.dart';
 import '../../domain/use_cases/export_library_use_case.dart';
 import '../../domain/use_cases/get_dashboard_stats_use_case.dart';
 import '../../domain/use_cases/register_loan_use_case.dart';
+import '../../domain/use_cases/restore_backup_use_case.dart';
 import '../../domain/use_cases/return_loan_use_case.dart';
 import '../../domain/use_cases/save_reading_session_use_case.dart';
 import '../theme/theme_controller.dart';
@@ -90,6 +91,18 @@ class ConfigureProviders {
       exportService: exportService,
     );
 
+    final restoreBackupUseCase = RestoreBackupUseCase(
+      backupSyncService: backupSyncService,
+      onReloadRepositories: [
+        bookRepository.reload,
+        shelfRepository.reload,
+        sessionRepository.reload,
+        noteRepository.reload,
+        loanRepository.reload,
+        settingsRepository.reload,
+      ],
+    );
+
     return ConfigureProviders(
       providers: [
         // Theme
@@ -118,6 +131,7 @@ class ConfigureProviders {
         Provider<DeleteBookUseCase>.value(value: deleteBookUseCase),
         Provider<GetDashboardStatsUseCase>.value(value: getDashboardStatsUseCase),
         Provider<ExportLibraryUseCase>.value(value: exportLibraryUseCase),
+        Provider<RestoreBackupUseCase>.value(value: restoreBackupUseCase),
       ],
     );
   }

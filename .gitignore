@@ -47,6 +47,7 @@ app.*.map.json
 # Widget Preview related
 .widget_preview/
 
-# Design references & archives
+# Design references, study slides & archives
 design_reference/
+aulas/
 *.zip

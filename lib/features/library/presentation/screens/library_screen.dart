@@ -3,11 +3,14 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/routes/app_routes.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../data/services/backup_sync_service.dart';
 import '../../../../domain/models/book_model.dart';
 import '../../../../domain/models/enums.dart';
 import '../../../../domain/repositories/book_repository.dart';
 import '../../../../domain/repositories/loan_repository.dart';
 import '../../../../domain/repositories/shelf_repository.dart';
+import '../../../../domain/use_cases/export_library_use_case.dart';
+import '../../../../domain/use_cases/restore_backup_use_case.dart';
 import '../viewmodels/library_viewmodel.dart';
 import '../widgets/advanced_filter_sheet.dart';
 import '../widgets/export_data_sheet.dart';
@@ -22,11 +25,29 @@ class LibraryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (ctx) => LibraryViewModel(
-        bookRepository: ctx.read<BookRepository>(),
-        loanRepository: ctx.read<LoanRepository>(),
-        shelfRepository: ctx.read<ShelfRepository>(),
-      ),
+      create: (ctx) {
+        ExportLibraryUseCase? exportUseCase;
+        BackupSyncService? backupService;
+        RestoreBackupUseCase? restoreUseCase;
+        try {
+          exportUseCase = ctx.read<ExportLibraryUseCase>();
+        } catch (_) {}
+        try {
+          backupService = ctx.read<BackupSyncService>();
+        } catch (_) {}
+        try {
+          restoreUseCase = ctx.read<RestoreBackupUseCase>();
+        } catch (_) {}
+
+        return LibraryViewModel(
+          bookRepository: ctx.read<BookRepository>(),
+          loanRepository: ctx.read<LoanRepository>(),
+          shelfRepository: ctx.read<ShelfRepository>(),
+          exportLibraryUseCase: exportUseCase,
+          backupSyncService: backupService,
+          restoreBackupUseCase: restoreUseCase,
+        );
+      },
       child: const _LibraryContent(),
     );
   }
@@ -84,7 +105,12 @@ class _LibraryContentState extends State<_LibraryContent> {
           IconButton(
             icon: const Icon(Icons.file_upload_outlined),
             tooltip: 'Exportação & Backup',
-            onPressed: () => ExportDataSheet.show(context),
+            onPressed: () => ExportDataSheet.show(
+              context,
+              onExport: vm.exportLibrary,
+              onBackup: vm.exportBackup,
+              onRestore: vm.restoreBackup,
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.shelves),

@@ -208,6 +208,9 @@ class AddBookViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Valida se um código lido pelo scanner/input tem formato ISBN-10 ou ISBN-13.
+  bool isValidIsbn(String rawIsbn) => BookApiService.isValidIsbn(rawIsbn);
+
   /// Consulta metadados de livro via BookApiService (Google Books + Open Library)
   Future<bool> lookupByIsbn(String rawIsbn) async {
     final clean = BookApiService.normalizeIsbn(rawIsbn);

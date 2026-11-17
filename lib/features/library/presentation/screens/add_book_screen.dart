@@ -139,9 +139,10 @@ class _AddBookContentState extends State<_AddBookContent> {
   Future<void> _onBarcodeDetected(BarcodeCapture capture) async {
     if (_isScannerPaused) return;
 
+    final vm = context.read<AddBookViewModel>();
     for (final barcode in capture.barcodes) {
       final raw = barcode.rawValue;
-      if (raw != null && raw.isNotEmpty && BookApiService.isValidIsbn(raw)) {
+      if (raw != null && raw.isNotEmpty && vm.isValidIsbn(raw)) {
         setState(() => _isScannerPaused = true);
         await _scannerController?.stop();
         await _handleIsbnLookup(raw);
@@ -419,7 +420,7 @@ class _AddBookContentState extends State<_AddBookContent> {
               // Indicador de Carregamento ao buscar ISBN
               if (vm.isLookingUp)
                 Container(
-                  color: Colors.black54,
+                  color: AppColors.darkBrown.withValues(alpha: 0.72),
                   child: const Center(
                     child: CircularProgressIndicator(color: AppColors.lightCream),
                   ),

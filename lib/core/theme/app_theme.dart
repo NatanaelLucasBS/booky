@@ -153,25 +153,31 @@ abstract final class AppTheme {
         ),
       ),
 
-      // Bottom Navigation Bar
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      // Material 3 NavigationBar (Aula 16)
+      navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.lightCream,
-        selectedItemColor: AppColors.darkBrown,
-        unselectedItemColor: AppColors.mediumBrown,
-        type: BottomNavigationBarType.fixed,
-        elevation: 4,
-        selectedLabelStyle: TextStyle(
-          fontFamilyFallback: sansFontFamilyFallback,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
-        ),
-        unselectedLabelStyle: TextStyle(
-          fontFamilyFallback: sansFontFamilyFallback,
-          fontSize: 11,
-          fontWeight: FontWeight.w400,
-          letterSpacing: 0.5,
-        ),
+        indicatorColor: AppColors.beige.withValues(alpha: 0.45),
+        elevation: 2,
+        height: 68,
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(color: AppColors.darkBrown, size: 22);
+          }
+          return const IconThemeData(color: AppColors.mediumBrown, size: 22);
+        }),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          return TextStyle(
+            fontFamilyFallback: sansFontFamilyFallback,
+            fontSize: 11,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w600
+                : FontWeight.w400,
+            letterSpacing: 0.5,
+            color: states.contains(WidgetState.selected)
+                ? AppColors.darkBrown
+                : AppColors.mediumBrown,
+          );
+        }),
       ),
 
       // Card Theme com borda sutil
@@ -396,24 +402,31 @@ abstract final class AppTheme {
         ),
       ),
 
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      // Material 3 NavigationBar (Aula 16)
+      navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.darkBrown,
-        selectedItemColor: AppColors.lightCream,
-        unselectedItemColor: AppColors.mediumBrown,
-        type: BottomNavigationBarType.fixed,
-        elevation: 4,
-        selectedLabelStyle: TextStyle(
-          fontFamilyFallback: sansFontFamilyFallback,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
-        ),
-        unselectedLabelStyle: TextStyle(
-          fontFamilyFallback: sansFontFamilyFallback,
-          fontSize: 11,
-          fontWeight: FontWeight.w400,
-          letterSpacing: 0.5,
-        ),
+        indicatorColor: AppColors.woodBrown,
+        elevation: 2,
+        height: 68,
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(color: AppColors.lightCream, size: 22);
+          }
+          return const IconThemeData(color: AppColors.mediumBrown, size: 22);
+        }),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          return TextStyle(
+            fontFamilyFallback: sansFontFamilyFallback,
+            fontSize: 11,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w600
+                : FontWeight.w400,
+            letterSpacing: 0.5,
+            color: states.contains(WidgetState.selected)
+                ? AppColors.lightCream
+                : AppColors.mediumBrown,
+          );
+        }),
       ),
 
       cardTheme: CardThemeData(

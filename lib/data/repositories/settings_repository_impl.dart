@@ -28,6 +28,12 @@ class SettingsRepositoryImpl implements SettingsRepository {
     _controller.add(_cache!);
   }
 
+  /// Recarrega o cache a partir do StorageService e notifica os streams SSOT.
+  Future<void> reload() async {
+    _initialized = false;
+    await _ensureInitialized();
+  }
+
   @override
   Stream<AppSettingsModel> watchSettings() async* {
     await _ensureInitialized();

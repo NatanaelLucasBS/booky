@@ -221,5 +221,43 @@ void main() {
       vm.setSelectedShelf(null);
       expect(vm.filteredBooks.length, 2);
     });
+
+    test('ao excluir estante, remove shelfId dos livros sem excluir os livros', () async {
+      final now = DateTime.now();
+      await shelfRepo.saveShelf(ShelfModel(
+        id: 'shelf-del',
+        name: 'Temporária',
+        createdAt: now,
+        updatedAt: now,
+      ));
+
+      await bookRepo.saveBook(BookModel(
+        id: 'b1',
+        title: 'Dom Casmurro',
+        author: 'Machado de Assis',
+        shelfIds: ['shelf-del', 'shelf-keep'],
+        createdAt: now,
+        updatedAt: now,
+      ));
+
+      final vm = LibraryViewModel(
+        bookRepository: bookRepo,
+        loanRepository: loanRepo,
+        shelfRepository: shelfRepo,
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      vm.setSelectedShelf('shelf-del');
+
+      await vm.deleteShelf('shelf-del');
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(vm.shelves.isEmpty, isTrue);
+      expect(vm.selectedShelfId, isNull);
+      expect(vm.totalCount, 1);
+      final updatedBook = await bookRepo.getBookById('b1');
+      expect(updatedBook, isNotNull);
+      expect(updatedBook!.shelfIds, ['shelf-keep']);
+    });
   });
 }
