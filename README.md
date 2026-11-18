@@ -103,6 +103,7 @@ lib/
     ├── library/                  # LibraryScreen + LibraryViewModel, AddBookScreen + AddBookViewModel + Modais (Filtros, Estantes, Export/Backup)
     ├── book_details/             # BookDetailsScreen + BookDetailsViewModel + Dialogs (Emprestimo, Notas/OCR)
     └── tracker/                  # ReadingTrackerScreen + TrackerViewModel
+test/                             # 12 suites de testes unitarios e de widget (Models, Services, UseCases, ViewModels e App)
 ```
 
 ---
@@ -140,10 +141,10 @@ flowchart TD
 | **RF4 — Diário & OCR** | ✅ | 3 abas (`Anotações`, `Citações`, `Resenha`) em [`BookDetailsScreen`](lib/features/book_details/presentation/screens/book_details_screen.dart) + OCR 100% offline via ML Kit com limpeza de arquivo temporário em `try/finally` |
 | **RF5 — Empréstimos** | ✅ | Bloqueia 2 empréstimos ativos no mesmo livro, agenda/cancela notificação local (`inexactAllowWhileIdle`) e calcula `LoanModel.isOverdue` |
 | **RF6 — Busca Avançada & Gráficos** | ✅ | Filtros `AND` combinados (autor, gênero, ano, status, nota, estante, tag) + gráficos `fl_chart` (livros por `finishedAt` e páginas por `dateKey`) + meta anual editável |
-| **RF7 — Exportação & Backup** | ✅ | PDF (Unicode PT-BR) + CSV (BOM UTF-8 `\uFEFF`) via `share_plus` + Backup/Restore JSON com `reload()` imediato dos 6 repositórios SSOT (`RestoreBackupUseCase`) |
+| **RF7 — Exportação & Backup** | ✅ | PDF (Unicode PT-BR) + CSV (BOM UTF-8 `\uFEFF`) via `share_plus` + Backup/Restore JSON portável entre dispositivos com `reload()` imediato dos 6 repositórios SSOT (`RestoreBackupUseCase`, 100% offline-first sem backend remoto) |
 | **Roteamento & Ciclo de Vida (`Aulas 04/05`)** | ✅ | `MaterialApp` usando exclusivamente `onGenerateRoute` (sem colisão com `routes:`), e todos os 5 ViewModels blindados com `_disposed` em `notifyListeners()` e `dispose()` |
 | **Material 3 & Paleta Stitch (`Aula 16`)** | ✅ | Paleta estrita de 5 tons (`AppColors`), Light/Dark Mode, `NavigationBar` + `NavigationDestination` |
-| **Build Android & Qualidade (`Aula 24`)** | ✅ | `gradle.properties` otimizado (`-Xmx2048m`, sem OOM), `proguard-rules.pro` protegendo ML Kit/Notificações no R8, `flutter analyze` sem nenhum apontamento e 12 suítes de testes passando |
+| **Build Android & Qualidade (`Aula 24`)** | ✅ | `gradle.properties` otimizado para máquinas de 4 GB RAM (`-Xmx1280m`, Kotlin `in-process`, sem daemon/paralelismo), `.vscode/settings.json` desligando Java/Gradle da IDE, `proguard-rules.pro` no R8, `flutter analyze` sem apontamentos e 12 suítes de testes em `test/` |
 
 ---
 
@@ -159,7 +160,7 @@ flowchart LR
 
 - **Fase 1 — Fundação, Contratos & Setup Android (`✅ Concluída`)**
   - [x] `pubspec.yaml` enxuto, `AppColors` (5 tons), `AppTheme` (Material 3 + `NavigationBar`), `AppRoutes` (`onGenerateRoute` sem colisão) e `ConfigureProviders`.
-  - [x] `android/gradle.properties` ajustado contra `OutOfMemoryError` e `android/app/proguard-rules.pro` configurado para R8 release.
+  - [x] `android/gradle.properties` e `.vscode/settings.json` otimizados para máquinas com 4 GB de RAM (`-Xmx1280m`, Kotlin `in-process`) + `android/app/proguard-rules.pro` configurado para R8 release.
   - [x] 6 Models + 6 Repositórios SSOT + **`LocalJsonStorageService`** definido como persistência oficial offline.
 - **Fase 2 — Catalogação, Biblioteca, Estantes & Busca Avançada (`✅ Concluída`)**
   - [x] `BookApiService`, `AddBookViewModel` + `AddBookScreen` e `LibraryViewModel` + `LibraryScreen` (com limpeza de `shelfIds` no `deleteShelf`).
@@ -180,13 +181,16 @@ flowchart LR
 
 ## 5. Guia Rápido para o Cleiton — Comandos, Usabilidade e Roteiro do Vídeo
 
-### Comandos de Validação e Build
+### Comandos de Validação e Build (e Dicas para PC com 4 GB RAM)
 ```bash
 flutter pub get
 flutter analyze
 flutter test --reporter expanded
-flutter build apk --release
+flutter run                    # Recomendado no dia a dia (celular USB em debug gasta bem menos RAM)
+flutter build apk --release    # Gera build/app/outputs/flutter-apk/app-release.apk
 ```
+
+> **Dica para o Cleiton (4 GB RAM):** use **celular físico via USB** (não abra emulador), feche navegador/apps pesados durante a compilação e rode `flutter pub get` ao clonar para que o Flutter gere o `android/local.properties` com os caminhos da sua máquina.
 
 ### Roteiro do Vídeo de Apresentação (Exigência da Disciplina)
 1. **Demonstração Prática (Telas & Requisitos):**

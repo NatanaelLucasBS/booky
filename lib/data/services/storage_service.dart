@@ -3,8 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
 
-/// Interface abstrata de persistência stateless por coleções.
-/// Seção 4.3 do PLANO_DESENVOLVIMENTO.md e Slide 25 da Aula 24.
+/// Interface abstrata de persistência stateless por coleções (Slide 25 da Aula 24).
 abstract interface class StorageService {
   Future<void> init();
   Future<List<Map<String, dynamic>>> getAll(String collection);
