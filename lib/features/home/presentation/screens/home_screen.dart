@@ -72,7 +72,22 @@ class _HomeView extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Início'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Image.asset(
+                'assets/Booky.png',
+                width: 26,
+                height: 26,
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Text('Booky'),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: 'Lembrete Diário de Leitura',
@@ -120,8 +135,8 @@ class _HomeView extends StatelessWidget {
                         ],
                       ),
                       Container(
-                        width: 44,
-                        height: 44,
+                        width: 48,
+                        height: 48,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: isDark ? AppColors.woodBrown : AppColors.beige.withValues(alpha: 0.4),
@@ -130,11 +145,13 @@ class _HomeView extends StatelessWidget {
                             width: 1.2,
                           ),
                         ),
+                        clipBehavior: Clip.antiAlias,
                         alignment: Alignment.center,
-                        child: Icon(
-                          Icons.menu_book,
-                          size: 20,
-                          color: isDark ? AppColors.lightCream : AppColors.darkBrown,
+                        child: Image.asset(
+                          'assets/Booky.png',
+                          width: 36,
+                          height: 36,
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ],

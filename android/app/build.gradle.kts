@@ -17,7 +17,7 @@ android {
 
     defaultConfig {
         applicationId = "br.ufrn.booky"
-        minSdk = 23
+        minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

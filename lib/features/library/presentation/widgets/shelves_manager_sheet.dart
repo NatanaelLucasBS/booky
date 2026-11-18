@@ -133,121 +133,124 @@ class _ShelvesManagerSheetState extends State<ShelvesManagerSheet> {
           ),
         ),
       ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.woodBrown : AppColors.beige,
-                  borderRadius: BorderRadius.circular(2),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.woodBrown : AppColors.beige,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            Text(
-              'GERENCIAR ESTANTES TEMÁTICAS',
-              style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 1.2),
-            ),
-            const SizedBox(height: 16),
+              Text(
+                'GERENCIAR ESTANTES TEMÁTICAS',
+                style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 1.2),
+              ),
+              const SizedBox(height: 16),
 
-            // Campo de criação rápida
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _nameCtrl,
-                    decoration: const InputDecoration(
-                      hintText: 'Nome da nova estante...',
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              // Campo de criação rápida
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _nameCtrl,
+                      decoration: const InputDecoration(
+                        hintText: 'Nome da nova estante...',
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filled(
-                  onPressed: _isCreating ? null : _handleCreate,
-                  icon: _isCreating
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.add, size: 20),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // Opção "Todas as estantes"
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                widget.selectedShelfId == null ? Icons.radio_button_checked : Icons.radio_button_off,
-                color: isDark ? AppColors.lightCream : AppColors.darkBrown,
-                size: 20,
+                  const SizedBox(width: 8),
+                  IconButton.filled(
+                    onPressed: _isCreating ? null : _handleCreate,
+                    icon: _isCreating
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.add, size: 20),
+                  ),
+                ],
               ),
-              title: const Text('Todas as Estantes'),
-              onTap: () {
-                widget.onSelectShelf(null);
-                Navigator.of(context).pop();
-              },
-            ),
+              const SizedBox(height: 20),
 
-            const Divider(),
-
-            // Lista de Estantes Existentes
-            if (widget.shelves.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Text(
-                  'Nenhuma estante customizada criada ainda.',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium,
+              // Opção "Todas as estantes"
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(
+                  widget.selectedShelfId == null ? Icons.radio_button_checked : Icons.radio_button_off,
+                  color: isDark ? AppColors.lightCream : AppColors.darkBrown,
+                  size: 20,
                 ),
-              )
-            else
-              ...widget.shelves.map((shelf) {
-                final isSelected = widget.selectedShelfId == shelf.id;
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-                    color: isDark ? AppColors.lightCream : AppColors.darkBrown,
-                    size: 20,
+                title: const Text('Todas as Estantes'),
+                onTap: () {
+                  widget.onSelectShelf(null);
+                  Navigator.of(context).pop();
+                },
+              ),
+
+              const Divider(),
+
+              // Lista de Estantes Existentes
+              if (widget.shelves.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    'Nenhuma estante customizada criada ainda.',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium,
                   ),
-                  title: Text(shelf.name),
-                  subtitle: shelf.description != null ? Text(shelf.description!) : null,
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (widget.onEditShelf != null)
+                )
+              else
+                ...widget.shelves.map((shelf) {
+                  final isSelected = widget.selectedShelfId == shelf.id;
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                      color: isDark ? AppColors.lightCream : AppColors.darkBrown,
+                      size: 20,
+                    ),
+                    title: Text(shelf.name),
+                    subtitle: shelf.description != null ? Text(shelf.description!) : null,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (widget.onEditShelf != null)
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 18),
+                            color: isDark ? AppColors.beige : AppColors.mediumBrown,
+                            onPressed: () => _showEditDialog(context, shelf),
+                          ),
                         IconButton(
-                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          icon: const Icon(Icons.delete_outline, size: 20),
                           color: isDark ? AppColors.beige : AppColors.mediumBrown,
-                          onPressed: () => _showEditDialog(context, shelf),
+                          onPressed: () async {
+                            await widget.onDeleteShelf(shelf.id);
+                            if (context.mounted) setState(() {});
+                          },
                         ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline, size: 20),
-                        color: isDark ? AppColors.beige : AppColors.mediumBrown,
-                        onPressed: () async {
-                          await widget.onDeleteShelf(shelf.id);
-                          if (context.mounted) setState(() {});
-                        },
-                      ),
-                    ],
-                  ),
-                  onTap: () {
-                    widget.onSelectShelf(shelf.id);
-                    Navigator.of(context).pop();
-                  },
-                );
-              }),
-          ],
+                      ],
+                    ),
+                    onTap: () {
+                      widget.onSelectShelf(shelf.id);
+                      Navigator.of(context).pop();
+                    },
+                  );
+                }),
+            ],
+          ),
         ),
       ),
     );

@@ -242,7 +242,7 @@ class _LibraryContentState extends State<_LibraryContent> {
                         padding: const EdgeInsets.fromLTRB(20, 8, 20, 80),
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          childAspectRatio: 0.58,
+                          childAspectRatio: 0.52,
                           crossAxisSpacing: 16,
                           mainAxisSpacing: 20,
                         ),
@@ -319,10 +319,10 @@ class _LibraryContentState extends State<_LibraryContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Capa com Proporção 2:3 e Fita Marcadora
-          AspectRatio(
-            aspectRatio: 2 / 3,
+          // Capa expandida no espaço disponível com Fita Marcadora
+          Expanded(
             child: Stack(
+              fit: StackFit.expand,
               children: [
                 Container(
                   decoration: BoxDecoration(

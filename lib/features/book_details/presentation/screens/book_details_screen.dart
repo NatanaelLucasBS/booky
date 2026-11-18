@@ -201,18 +201,21 @@ class _BookDetailsContentState extends State<_BookDetailsContent> {
             ),
           ),
         ),
-        child: ElevatedButton.icon(
-          onPressed: () {
-            Navigator.of(context).pushNamed(
-              AppRoutes.tracker,
-              arguments: book.id,
-            );
-          },
-          icon: const Icon(Icons.timer_outlined, size: 20),
-          label: Text(
-            book.status == BookStatus.read
-                ? 'REVER SESSÕES DE LEITURA'
-                : 'CONTINUAR LEITURA',
+        child: SafeArea(
+          top: false,
+          child: ElevatedButton.icon(
+            onPressed: () {
+              Navigator.of(context).pushNamed(
+                AppRoutes.tracker,
+                arguments: book.id,
+              );
+            },
+            icon: const Icon(Icons.timer_outlined, size: 20),
+            label: Text(
+              book.status == BookStatus.read
+                  ? 'REVER SESSÕES DE LEITURA'
+                  : 'CONTINUAR LEITURA',
+            ),
           ),
         ),
       ),

@@ -245,58 +245,60 @@ class _AddBookContentState extends State<_AddBookContent> {
       appBar: AppBar(
         title: Text(isEditing ? 'Editar Livro' : 'Adicionar Livro'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Segmented Control de Modo (somente no cadastro novo)
-            if (!isEditing) ...[
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.woodBrown : AppColors.beige.withValues(alpha: 0.35),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildModeTab(
-                        title: 'ESCANEAR CÓDIGO',
-                        isSelected: vm.activeMode == 0,
-                        onTap: () {
-                          vm.setMode(0);
-                          setState(() => _isScannerPaused = false);
-                          _scannerController?.start();
-                        },
-                        isDark: isDark,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Segmented Control de Modo (somente no cadastro novo)
+              if (!isEditing) ...[
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.woodBrown : AppColors.beige.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildModeTab(
+                          title: 'ESCANEAR CÓDIGO',
+                          isSelected: vm.activeMode == 0,
+                          onTap: () {
+                            vm.setMode(0);
+                            setState(() => _isScannerPaused = false);
+                            _scannerController?.start();
+                          },
+                          isDark: isDark,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: _buildModeTab(
-                        title: 'CADASTRO MANUAL',
-                        isSelected: vm.activeMode == 1,
-                        onTap: () {
-                          vm.setMode(1);
-                          setState(() => _isScannerPaused = true);
-                          _scannerController?.stop();
-                        },
-                        isDark: isDark,
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: _buildModeTab(
+                          title: 'CADASTRO MANUAL',
+                          isSelected: vm.activeMode == 1,
+                          onTap: () {
+                            vm.setMode(1);
+                            setState(() => _isScannerPaused = true);
+                            _scannerController?.stop();
+                          },
+                          isDark: isDark,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-            ],
+                const SizedBox(height: 24),
+              ],
 
-            // Conteúdo do Modo
-            if (!isEditing && vm.activeMode == 0)
-              _buildScannerView(vm, theme, isDark)
-            else
-              _buildManualView(vm, theme, isDark, isEditing),
-          ],
+              // Conteúdo do Modo
+              if (!isEditing && vm.activeMode == 0)
+                _buildScannerView(vm, theme, isDark)
+              else
+                _buildManualView(vm, theme, isDark, isEditing),
+            ],
+          ),
         ),
       ),
     );

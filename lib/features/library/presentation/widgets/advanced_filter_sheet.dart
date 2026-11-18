@@ -115,158 +115,161 @@ class _AdvancedFilterSheetState extends State<AdvancedFilterSheet> {
           ),
         ),
       ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Barra superior
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.woodBrown : AppColors.beige,
-                  borderRadius: BorderRadius.circular(2),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Barra superior
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.woodBrown : AppColors.beige,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'BUSCA AVANÇADA',
-                  style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 1.2),
-                ),
-                TextButton(
-                  onPressed: _clear,
-                  child: const Text('LIMPAR', style: TextStyle(fontSize: 11)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Autor
-            _buildLabel('Autor'),
-            const SizedBox(height: 4),
-            TextField(
-              controller: _authorCtrl,
-              decoration: const InputDecoration(hintText: 'Ex: Machado de Assis'),
-            ),
-            const SizedBox(height: 12),
-
-            // Gênero & Ano
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildLabel('Gênero'),
-                      const SizedBox(height: 4),
-                      TextField(
-                        controller: _genreCtrl,
-                        decoration: const InputDecoration(hintText: 'Ex: Romance'),
-                      ),
-                    ],
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'BUSCA AVANÇADA',
+                    style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 1.2),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildLabel('Ano de Publicação'),
-                      const SizedBox(height: 4),
-                      TextField(
-                        controller: _yearCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(hintText: 'Ex: 1899'),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Status
-            _buildLabel('Status de Leitura'),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                _buildStatusFilterChip('Todos', null, isDark),
-                _buildStatusFilterChip('Quero Ler', BookStatus.wantToRead, isDark),
-                _buildStatusFilterChip('Lendo', BookStatus.reading, isDark),
-                _buildStatusFilterChip('Lido', BookStatus.read, isDark),
-                _buildStatusFilterChip('Abandonado', BookStatus.abandoned, isDark),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            // Avaliação Mínima
-            _buildLabel('Avaliação Mínima'),
-            const SizedBox(height: 6),
-            Row(
-              children: [1, 2, 3, 4, 5].map((star) {
-                final isSelected = _selectedMinRating != null && _selectedMinRating! >= star;
-                return IconButton(
-                  icon: Icon(
-                    isSelected ? Icons.star : Icons.star_border,
-                    color: isDark ? AppColors.lightCream : AppColors.darkBrown,
-                    size: 24,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      if (_selectedMinRating == star.toDouble()) {
-                        _selectedMinRating = null;
-                      } else {
-                        _selectedMinRating = star.toDouble();
-                      }
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 12),
-
-            // Estante Temática
-            if (widget.shelves.isNotEmpty) ...[
-              _buildLabel('Estante Temática'),
-              const SizedBox(height: 4),
-              DropdownButtonFormField<String?>(
-                initialValue: _selectedShelfId,
-                decoration: const InputDecoration(hintText: 'Selecione uma estante'),
-                items: [
-                  const DropdownMenuItem(value: null, child: Text('Todas as estantes')),
-                  ...widget.shelves.map(
-                    (s) => DropdownMenuItem(value: s.id, child: Text(s.name)),
+                  TextButton(
+                    onPressed: _clear,
+                    child: const Text('LIMPAR', style: TextStyle(fontSize: 11)),
                   ),
                 ],
-                onChanged: (val) => setState(() => _selectedShelfId = val),
               ),
               const SizedBox(height: 12),
+
+              // Autor
+              _buildLabel('Autor'),
+              const SizedBox(height: 4),
+              TextField(
+                controller: _authorCtrl,
+                decoration: const InputDecoration(hintText: 'Ex: Machado de Assis'),
+              ),
+              const SizedBox(height: 12),
+
+              // Gênero & Ano
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildLabel('Gênero'),
+                        const SizedBox(height: 4),
+                        TextField(
+                          controller: _genreCtrl,
+                          decoration: const InputDecoration(hintText: 'Ex: Romance'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildLabel('Ano de Publicação'),
+                        const SizedBox(height: 4),
+                        TextField(
+                          controller: _yearCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(hintText: 'Ex: 1899'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Status
+              _buildLabel('Status de Leitura'),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  _buildStatusFilterChip('Todos', null, isDark),
+                  _buildStatusFilterChip('Quero Ler', BookStatus.wantToRead, isDark),
+                  _buildStatusFilterChip('Lendo', BookStatus.reading, isDark),
+                  _buildStatusFilterChip('Lido', BookStatus.read, isDark),
+                  _buildStatusFilterChip('Abandonado', BookStatus.abandoned, isDark),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // Avaliação Mínima
+              _buildLabel('Avaliação Mínima'),
+              const SizedBox(height: 6),
+              Row(
+                children: [1, 2, 3, 4, 5].map((star) {
+                  final isSelected = _selectedMinRating != null && _selectedMinRating! >= star;
+                  return IconButton(
+                    icon: Icon(
+                      isSelected ? Icons.star : Icons.star_border,
+                      color: isDark ? AppColors.lightCream : AppColors.darkBrown,
+                      size: 24,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        if (_selectedMinRating == star.toDouble()) {
+                          _selectedMinRating = null;
+                        } else {
+                          _selectedMinRating = star.toDouble();
+                        }
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 12),
+
+              // Estante Temática
+              if (widget.shelves.isNotEmpty) ...[
+                _buildLabel('Estante Temática'),
+                const SizedBox(height: 4),
+                DropdownButtonFormField<String?>(
+                  initialValue: _selectedShelfId,
+                  decoration: const InputDecoration(hintText: 'Selecione uma estante'),
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text('Todas as estantes')),
+                    ...widget.shelves.map(
+                      (s) => DropdownMenuItem(value: s.id, child: Text(s.name)),
+                    ),
+                  ],
+                  onChanged: (val) => setState(() => _selectedShelfId = val),
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              // Tag
+              _buildLabel('Tag Customizada'),
+              const SizedBox(height: 4),
+              TextField(
+                controller: _tagCtrl,
+                decoration: const InputDecoration(hintText: 'Ex: clássico, favorito'),
+              ),
+              const SizedBox(height: 24),
+
+              // Botão Aplicar
+              ElevatedButton(
+                onPressed: _apply,
+                child: const Text('APLICAR FILTROS'),
+              ),
             ],
-
-            // Tag
-            _buildLabel('Tag Customizada'),
-            const SizedBox(height: 4),
-            TextField(
-              controller: _tagCtrl,
-              decoration: const InputDecoration(hintText: 'Ex: clássico, favorito'),
-            ),
-            const SizedBox(height: 24),
-
-            // Botão Aplicar
-            ElevatedButton(
-              onPressed: _apply,
-              child: const Text('APLICAR FILTROS'),
-            ),
-          ],
+          ),
         ),
       ),
     );
