@@ -133,45 +133,43 @@ class _NoteEditorDialogState extends State<NoteEditorDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Botão OCR na Citação
-            if (widget.type == NoteType.quote) ...[
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.beige.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextButton.icon(
-                        onPressed: _isOcrLoading
-                            ? null
-                            : () => _handleOcr(ImageSource.camera),
-                        icon: _isOcrLoading
-                            ? const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.camera_alt, size: 16),
-                        label: const Text('OCR CÂMERA', style: TextStyle(fontSize: 11)),
-                      ),
-                    ),
-                    Expanded(
-                      child: TextButton.icon(
-                        onPressed: _isOcrLoading
-                            ? null
-                            : () => _handleOcr(ImageSource.gallery),
-                        icon: const Icon(Icons.photo_library, size: 16),
-                        label: const Text('GALERIA', style: TextStyle(fontSize: 11)),
-                      ),
-                    ),
-                  ],
-                ),
+            // Botão OCR para capturar texto de página física
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.beige.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(4),
               ),
-              const SizedBox(height: 12),
-            ],
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: _isOcrLoading
+                          ? null
+                          : () => _handleOcr(ImageSource.camera),
+                      icon: _isOcrLoading
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.camera_alt, size: 16),
+                      label: const Text('OCR CÂMERA', style: TextStyle(fontSize: 11)),
+                    ),
+                  ),
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: _isOcrLoading
+                          ? null
+                          : () => _handleOcr(ImageSource.gallery),
+                      icon: const Icon(Icons.photo_library, size: 16),
+                      label: const Text('GALERIA', style: TextStyle(fontSize: 11)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
 
             if (widget.type != NoteType.review) ...[
               Row(

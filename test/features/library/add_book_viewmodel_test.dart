@@ -141,5 +141,53 @@ void main() {
       expect(vm.totalPages, 600);
       expect(vm.status, BookStatus.read);
     });
+
+    test('ao editar livro Lido para Lendo ou Quero Ler, limpa finishedAt e ajusta currentPage', () async {
+      final now = DateTime.now();
+      final existing = BookModel(
+        id: 'edit-1',
+        title: 'Memórias Póstumas',
+        author: 'Machado de Assis',
+        totalPages: 300,
+        currentPage: 300,
+        status: BookStatus.read,
+        format: BookFormat.physical,
+        startedAt: now,
+        finishedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      final vm = AddBookViewModel(
+        bookRepository: bookRepo,
+        shelfRepository: shelfRepo,
+        bookApiService: FakeBookApiService(),
+        initialBook: existing,
+      );
+
+      vm.setStatus(BookStatus.reading);
+      vm.setTotalPages(200);
+      await vm.saveBook();
+
+      var saved = await bookRepo.getBookById('edit-1');
+      expect(saved!.status, BookStatus.reading);
+      expect(saved.finishedAt, isNull);
+      expect(saved.currentPage, 200);
+
+      final vmReset = AddBookViewModel(
+        bookRepository: bookRepo,
+        shelfRepository: shelfRepo,
+        bookApiService: FakeBookApiService(),
+        initialBook: saved,
+      );
+      vmReset.setStatus(BookStatus.wantToRead);
+      await vmReset.saveBook();
+
+      saved = await bookRepo.getBookById('edit-1');
+      expect(saved!.status, BookStatus.wantToRead);
+      expect(saved.startedAt, isNull);
+      expect(saved.finishedAt, isNull);
+      expect(saved.currentPage, 0);
+    });
   });
 }

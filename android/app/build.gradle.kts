@@ -34,6 +34,10 @@ android {
             )
         }
     }
+
+    lint {
+        checkReleaseBuilds = false
+    }
 }
 
 kotlin {

@@ -57,3 +57,25 @@ enum NoteType {
     );
   }
 }
+
+/// Escopo de exportação do acervo (Tema 6 - RF7).
+enum ExportScope {
+  fullCatalog,
+  wishlist;
+
+  String get label => switch (this) {
+        ExportScope.fullCatalog => 'Catálogo Completo',
+        ExportScope.wishlist => 'Lista de Desejos (Quero Ler)',
+      };
+}
+
+/// Formato de arquivo para exportação (Tema 6 - RF7).
+enum ExportFormat {
+  pdf,
+  csv;
+
+  String get label => switch (this) {
+        ExportFormat.pdf => 'Documento PDF (.pdf)',
+        ExportFormat.csv => 'Planilha CSV (.csv)',
+      };
+}

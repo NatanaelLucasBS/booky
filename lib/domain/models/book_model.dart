@@ -72,6 +72,8 @@ class BookModel {
     List<String>? shelfIds,
     DateTime? startedAt,
     DateTime? finishedAt,
+    bool clearStartedAt = false,
+    bool clearFinishedAt = false,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -92,8 +94,8 @@ class BookModel {
       rating: rating ?? this.rating,
       tags: tags ?? this.tags,
       shelfIds: shelfIds ?? this.shelfIds,
-      startedAt: startedAt ?? this.startedAt,
-      finishedAt: finishedAt ?? this.finishedAt,
+      startedAt: clearStartedAt ? null : (startedAt ?? this.startedAt),
+      finishedAt: clearFinishedAt ? null : (finishedAt ?? this.finishedAt),
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

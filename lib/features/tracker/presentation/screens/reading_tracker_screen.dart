@@ -177,14 +177,17 @@ class _ReadingTrackerView extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    Text(
-                      _formatDuration(vm.currentSeconds),
-                      style: TextStyle(
-                        fontFamilyFallback: const ['Courier', 'monospace'],
-                        fontSize: 54,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 2.0,
-                        color: isDark ? AppColors.lightCream : AppColors.darkBrown,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        _formatDuration(vm.currentSeconds),
+                        style: TextStyle(
+                          fontFamilyFallback: const ['Courier', 'monospace'],
+                          fontSize: 54,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 2.0,
+                          color: isDark ? AppColors.lightCream : AppColors.darkBrown,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -199,7 +202,8 @@ class _ReadingTrackerView extends StatelessWidget {
 
                     // Controle Interativo de Páginas
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                       decoration: BoxDecoration(
                         color: isDark
                             ? AppColors.woodBrown
@@ -220,59 +224,89 @@ class _ReadingTrackerView extends StatelessWidget {
                           ),
                           const SizedBox(height: 16),
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               // Botão Decrementar
                               IconButton.outlined(
+                                tooltip: 'Diminuir página',
                                 onPressed: vm.currentPage > 0 ? vm.decrementPage : null,
                                 icon: const Icon(Icons.remove, size: 20),
+                                constraints: const BoxConstraints(
+                                  minWidth: 44,
+                                  minHeight: 44,
+                                ),
                                 style: OutlinedButton.styleFrom(
                                   side: BorderSide(
                                     color: isDark ? AppColors.mediumBrown : AppColors.beige,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 24),
-                              InkWell(
-                                borderRadius: BorderRadius.circular(4),
-                                onTap: () => _showProgressInputDialog(context, vm, book.totalPages),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  child: Column(
-                                    children: [
-                                      Row(
-                                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                                        textBaseline: TextBaseline.alphabetic,
-                                        children: [
-                                          Text(
-                                            '${vm.currentPage}',
-                                            style: theme.textTheme.headlineMedium?.copyWith(
-                                              fontSize: 32,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(4),
+                                  onTap: () =>
+                                      _showProgressInputDialog(context, vm, book.totalPages),
+                                  child: Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                                            textBaseline: TextBaseline.alphabetic,
+                                            children: [
+                                              Text(
+                                                '${vm.currentPage}',
+                                                style:
+                                                    theme.textTheme.headlineMedium?.copyWith(
+                                                  fontSize: 32,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              if (book.totalPages > 0) ...[
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  'de ${book.totalPages}',
+                                                  style: theme.textTheme.bodyMedium,
+                                                ),
+                                              ],
+                                            ],
                                           ),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            'de ${book.totalPages}',
-                                            style: theme.textTheme.bodyMedium,
-                                          ),
-                                        ],
-                                      ),
-                                      Text(
-                                        'página atual (toque p/ digitar pág. ou %)',
-                                        style: theme.textTheme.labelSmall?.copyWith(fontSize: 9),
-                                      ),
-                                    ],
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'página atual (toque p/ digitar pág. ou %)',
+                                          textAlign: TextAlign.center,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style:
+                                              theme.textTheme.labelSmall?.copyWith(fontSize: 9),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 24),
+                              const SizedBox(width: 8),
                               // Botão Incrementar
                               IconButton.outlined(
-                                onPressed: (book.totalPages == 0 || vm.currentPage < book.totalPages)
+                                tooltip: 'Avançar página',
+                                onPressed: (book.totalPages <= 0 ||
+                                        vm.currentPage < book.totalPages)
                                     ? vm.incrementPage
                                     : null,
                                 icon: const Icon(Icons.add, size: 20),
+                                constraints: const BoxConstraints(
+                                  minWidth: 44,
+                                  minHeight: 44,
+                                ),
                                 style: OutlinedButton.styleFrom(
                                   side: BorderSide(
                                     color: isDark ? AppColors.mediumBrown : AppColors.beige,
@@ -509,7 +543,9 @@ class _ReadingTrackerView extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Página final registrada: ${vm.currentPage} de ${book.totalPages}.',
+              book.totalPages > 0
+                  ? 'Página final registrada: ${vm.currentPage} de ${book.totalPages}.'
+                  : 'Página final registrada: ${vm.currentPage}.',
               style: Theme.of(ctx).textTheme.bodySmall,
             ),
             if (isFinished) ...[
@@ -570,9 +606,10 @@ class _ReadingTrackerView extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         title: const Text('Atualizar Progresso'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             TextField(
               controller: pageCtrl,
               keyboardType: TextInputType.number,
@@ -608,6 +645,7 @@ class _ReadingTrackerView extends StatelessWidget {
               ),
             ],
           ],
+        ),
         ),
         actions: [
           TextButton(
@@ -655,21 +693,28 @@ class _ReadingTrackerView extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.history, size: 16),
-                  const SizedBox(width: 8),
-                  Text(
-                    dateStr,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    '$totalPagesDay páginas (${daySessions.length} ${daySessions.length == 1 ? "sessão" : "sessões"})',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                ],
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(Icons.history, size: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      dateStr,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        '$totalPagesDay páginas (${daySessions.length} ${daySessions.length == 1 ? "sessão" : "sessões"})',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Text(
                 '$durationMin min',
                 style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),

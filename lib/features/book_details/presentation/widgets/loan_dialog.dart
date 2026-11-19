@@ -77,6 +77,7 @@ class _LoanDialogState extends State<LoanDialog> {
 
   Future<void> _submit() async {
     final name = _nameCtrl.text.trim();
+    final contact = _contactCtrl.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -86,11 +87,20 @@ class _LoanDialogState extends State<LoanDialog> {
       );
       return;
     }
+    if (contact.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor, informe o contato do amigo.'),
+          backgroundColor: AppColors.darkBrown,
+        ),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
     final success = await widget.onConfirm(
       borrowerName: name,
-      borrowerContact: _contactCtrl.text.trim(),
+      borrowerContact: contact,
       loanDate: _loanDate,
       expectedReturnDate: _expectedReturnDate,
     );

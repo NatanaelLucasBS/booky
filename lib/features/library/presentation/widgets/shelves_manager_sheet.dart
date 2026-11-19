@@ -5,6 +5,7 @@ import '../../../../domain/models/shelf_model.dart';
 /// Modal para gerenciar estantes temáticas (listar, criar, editar e excluir).
 class ShelvesManagerSheet extends StatefulWidget {
   final List<ShelfModel> shelves;
+  final List<ShelfModel> Function()? getShelves;
   final String? selectedShelfId;
   final void Function(String? shelfId) onSelectShelf;
   final Future<void> Function(String name, String? description) onCreateShelf;
@@ -14,6 +15,7 @@ class ShelvesManagerSheet extends StatefulWidget {
   const ShelvesManagerSheet({
     super.key,
     required this.shelves,
+    this.getShelves,
     required this.selectedShelfId,
     required this.onSelectShelf,
     required this.onCreateShelf,
@@ -24,6 +26,7 @@ class ShelvesManagerSheet extends StatefulWidget {
   static Future<void> show(
     BuildContext context, {
     required List<ShelfModel> shelves,
+    List<ShelfModel> Function()? getShelves,
     required String? selectedShelfId,
     required void Function(String? shelfId) onSelectShelf,
     required Future<void> Function(String name, String? description) onCreateShelf,
@@ -36,6 +39,7 @@ class ShelvesManagerSheet extends StatefulWidget {
       backgroundColor: Colors.transparent,
       builder: (ctx) => ShelvesManagerSheet(
         shelves: shelves,
+        getShelves: getShelves,
         selectedShelfId: selectedShelfId,
         onSelectShelf: onSelectShelf,
         onCreateShelf: onCreateShelf,
@@ -67,6 +71,7 @@ class _ShelvesManagerSheetState extends State<ShelvesManagerSheet> {
 
     setState(() => _isCreating = true);
     await widget.onCreateShelf(name, _descCtrl.text.trim());
+    await Future<void>.delayed(const Duration(milliseconds: 20));
     _nameCtrl.clear();
     _descCtrl.clear();
     if (mounted) setState(() => _isCreating = false);
@@ -80,19 +85,21 @@ class _ShelvesManagerSheetState extends State<ShelvesManagerSheet> {
       context: context,
       builder: (dialogCtx) => AlertDialog(
         title: const Text('Editar Estante'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(labelText: 'Nome da Estante'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descCtrl,
-              decoration: const InputDecoration(labelText: 'Descrição (opcional)'),
-            ),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Nome da Estante'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: descCtrl,
+                decoration: const InputDecoration(labelText: 'Descrição (opcional)'),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -104,6 +111,7 @@ class _ShelvesManagerSheetState extends State<ShelvesManagerSheet> {
               final clean = nameCtrl.text.trim();
               if (clean.isNotEmpty && widget.onEditShelf != null) {
                 await widget.onEditShelf!(shelf, clean, descCtrl.text);
+                await Future<void>.delayed(const Duration(milliseconds: 20));
                 if (dialogCtx.mounted) Navigator.of(dialogCtx).pop();
                 if (mounted) setState(() {});
               }
@@ -203,7 +211,7 @@ class _ShelvesManagerSheetState extends State<ShelvesManagerSheet> {
               const Divider(),
 
               // Lista de Estantes Existentes
-              if (widget.shelves.isEmpty)
+              if ((widget.getShelves?.call() ?? widget.shelves).isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Text(
@@ -213,7 +221,7 @@ class _ShelvesManagerSheetState extends State<ShelvesManagerSheet> {
                   ),
                 )
               else
-                ...widget.shelves.map((shelf) {
+                ...(widget.getShelves?.call() ?? widget.shelves).map((shelf) {
                   final isSelected = widget.selectedShelfId == shelf.id;
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
@@ -238,6 +246,7 @@ class _ShelvesManagerSheetState extends State<ShelvesManagerSheet> {
                           color: isDark ? AppColors.beige : AppColors.mediumBrown,
                           onPressed: () async {
                             await widget.onDeleteShelf(shelf.id);
+                            await Future<void>.delayed(const Duration(milliseconds: 20));
                             if (context.mounted) setState(() {});
                           },
                         ),

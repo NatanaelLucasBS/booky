@@ -77,6 +77,7 @@ class ConfigureProviders {
       noteRepository: noteRepository,
       loanRepository: loanRepository,
       sessionRepository: sessionRepository,
+      notificationService: notificationService,
     );
 
     final getDashboardStatsUseCase = GetDashboardStatsUseCase(

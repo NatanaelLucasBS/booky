@@ -34,7 +34,7 @@ flowchart LR
 
     subgraph EXT["Dados Locais e Externos"]
         JSON["LocalJsonStorageService (JSON em disco)"]
-        API["Google Books + Open Library API"]
+        API["Open Library API"]
         ML["ML Kit OCR + Camera"]
         NOTIF["Notificacoes + Export PDF/CSV"]
     end
@@ -135,7 +135,7 @@ flowchart TD
 
 | Requisito / Aula | Status | Evidência Técnica no Código |
 | :--- | :---: | :--- |
-| **RF1 — ISBN (Scanner + API) (`Aula 06`)** | ✅ | [`BookApiService`](lib/data/services/book_api_service.dart) consulta Google Books com fallback na Open Library e converte capas para `https://`; [`AddBookScreen`](lib/features/library/presentation/screens/add_book_screen.dart) usa `mobile_scanner` com trava de frame e revisão manual |
+| **RF1 — ISBN (Scanner + API) (`Aula 06`)** | ✅ | [`BookApiService`](lib/data/services/book_api_service.dart) consulta exclusivamente a Open Library API (`/api/books`, `/isbn` + `/works`, `/search.json` e Covers API com conversão automática `ISBN-13` ↔ `ISBN-10` e capas em `https://`); [`AddBookScreen`](lib/features/library/presentation/screens/add_book_screen.dart) usa `mobile_scanner` com trava de frame e revisão manual |
 | **RF2 — Estantes, Formato & Status** | ✅ | 4 status (`wantToRead`, `reading`, `read`, `abandoned`), formato (`physical`, `digital`), ciclo automático `startedAt`/`finishedAt` (limpando `finishedAt = null` ao sair de `read`) e limpeza de `shelfIds` ao excluir estante |
 | **RF3 — Rastreador & Sessões** | ✅ | Cronômetro por timestamp resistente a segundo plano, sincronia bidirecional página ↔ `%`, histórico diário (`YYYY-MM-DD`) e estimativa protegida contra `NaN`/`Infinity` |
 | **RF4 — Diário & OCR** | ✅ | 3 abas (`Anotações`, `Citações`, `Resenha`) em [`BookDetailsScreen`](lib/features/book_details/presentation/screens/book_details_screen.dart) + OCR 100% offline via ML Kit com limpeza de arquivo temporário em `try/finally` |

@@ -10,25 +10,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../domain/models/book_model.dart';
 
-enum ExportScope {
-  fullCatalog,
-  wishlist;
-
-  String get label => switch (this) {
-        ExportScope.fullCatalog => 'Catálogo Completo',
-        ExportScope.wishlist => 'Lista de Desejos (Quero Ler)',
-      };
-}
-
-enum ExportFormat {
-  pdf,
-  csv;
-
-  String get label => switch (this) {
-        ExportFormat.pdf => 'Documento PDF (.pdf)',
-        ExportFormat.csv => 'Planilha CSV (.csv)',
-      };
-}
+export '../../domain/models/enums.dart' show ExportScope, ExportFormat;
 
 /// Serviço stateless responsável pela geração de relatórios PDF, planilhas CSV
 /// e acionamento do compartilhamento nativo via share_plus (Slide 25 da Aula 24).

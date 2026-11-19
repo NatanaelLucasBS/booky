@@ -135,18 +135,21 @@ class BookDetailsViewModel extends ChangeNotifier {
     }
 
     DateTime? finishedAt = _book!.finishedAt;
+    bool clearFinishedAt = false;
     int currentPage = _book!.currentPage;
     if (newStatus == BookStatus.read) {
       finishedAt = now;
       if (_book!.totalPages > 0) currentPage = _book!.totalPages;
     } else if (_book!.status == BookStatus.read) {
       finishedAt = null;
+      clearFinishedAt = true;
     }
 
     final updated = _book!.copyWith(
       status: newStatus,
       startedAt: startedAt,
       finishedAt: finishedAt,
+      clearFinishedAt: clearFinishedAt,
       currentPage: currentPage,
       updatedAt: now,
     );

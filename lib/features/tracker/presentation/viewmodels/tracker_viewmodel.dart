@@ -192,8 +192,8 @@ class TrackerViewModel extends ChangeNotifier with WidgetsBindingObserver {
 
   // --- Velocidade e Estimativa de Conclusão ---
   double get pagesPerHour {
-    int totalPages = 0;
-    int totalSeconds = 0;
+    int totalPages = pagesReadThisSession;
+    int totalSeconds = currentSeconds;
 
     for (final s in _sessions) {
       totalPages += s.pagesRead;

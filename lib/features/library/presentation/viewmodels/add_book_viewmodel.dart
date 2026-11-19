@@ -211,7 +211,7 @@ class AddBookViewModel extends ChangeNotifier {
   /// Valida se um código lido pelo scanner/input tem formato ISBN-10 ou ISBN-13.
   bool isValidIsbn(String rawIsbn) => BookApiService.isValidIsbn(rawIsbn);
 
-  /// Consulta metadados de livro via BookApiService (Google Books + Open Library)
+  /// Consulta metadados de livro via BookApiService (Open Library API)
   Future<bool> lookupByIsbn(String rawIsbn) async {
     final clean = BookApiService.normalizeIsbn(rawIsbn);
     if (!BookApiService.isValidIsbn(clean)) {
@@ -277,6 +277,8 @@ class AddBookViewModel extends ChangeNotifier {
       DateTime? startedAt = initialBook?.startedAt;
       if (_status == BookStatus.reading && startedAt == null) {
         startedAt = now;
+      } else if (_status == BookStatus.wantToRead) {
+        startedAt = null;
       }
 
       DateTime? finishedAt = initialBook?.finishedAt;
@@ -286,8 +288,16 @@ class AddBookViewModel extends ChangeNotifier {
         if (_totalPages > 0) {
           currentPage = _totalPages;
         }
-      } else if (initialBook?.status == BookStatus.read && _status != BookStatus.read) {
+      } else if (_status == BookStatus.wantToRead) {
         finishedAt = null;
+        currentPage = 0;
+      } else {
+        if (initialBook?.status == BookStatus.read) {
+          finishedAt = null;
+        }
+        if (_totalPages > 0 && currentPage > _totalPages) {
+          currentPage = _totalPages;
+        }
       }
 
       final bookToSave = BookModel(

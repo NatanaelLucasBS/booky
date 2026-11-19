@@ -83,6 +83,7 @@ class _LibraryContentState extends State<_LibraryContent> {
     ShelvesManagerSheet.show(
       context,
       shelves: vm.shelves,
+      getShelves: () => vm.shelves,
       selectedShelfId: vm.selectedShelfId,
       onSelectShelf: (id) => vm.setSelectedShelf(id),
       onCreateShelf: (name, desc) => vm.createShelf(name, desc),

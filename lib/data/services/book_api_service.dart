@@ -60,14 +60,17 @@ class BookApiException implements Exception {
   String toString() => message;
 }
 
-/// Serviço stateless de consulta a APIs de Livros com estratégia multiprovedor em cascata:
-/// 1. Google Books API (todos os itens retornados + detalhes do volume)
-/// 2. BrasilAPI (CBL / Mercosul para catálogo brasileiro)
-/// 3. Open Library Books & Search API (number_of_pages, pagination, number_of_pages_median, cover_i)
-/// 4. Open Library Covers API (recuperação direta de capas por ISBN)
-/// 5. Fallback por Título + Autor (para recuperar capa/páginas de outras edições da mesma obra)
-/// 6. Fallback de capa direta por Google volumeId
+/// Serviço stateless de consulta exclusiva à Open Library API (Slide 25 da Aula 24):
+/// 1. Open Library Books API (/api/books) por ISBN principal e equivalente (ISBN-10 <-> ISBN-13)
+/// 2. Open Library Edition & Works API (/isbn/{isbn}.json + /works/{id}.json) para sinopse e páginas
+/// 3. Open Library Search API (/search.json) por ISBN e por Título + Autor (mediana de páginas e cover_i)
+/// 4. Open Library Covers API direta por ISBN
 class BookApiService {
+  static const Map<String, String> _jsonHeaders = {
+    'Accept': 'application/json',
+    'User-Agent': 'BookyApp/1.0 (https://github.com/NatanaelLucasBS/booky)',
+  };
+
   final http.Client _client;
 
   BookApiService({http.Client? client}) : _client = client ?? http.Client();
@@ -89,7 +92,7 @@ class BookApiService {
     return false;
   }
 
-  /// Normaliza URLs de capas (força HTTPS e remove edge=curl do Google Books).
+  /// Normaliza URLs de capas garantindo protocolo HTTPS.
   static String? normalizeCoverUrl(String? rawUrl) {
     if (rawUrl == null) return null;
     var url = rawUrl.trim();
@@ -100,11 +103,6 @@ class BookApiService {
     } else if (url.startsWith('http://')) {
       url = url.replaceFirst('http://', 'https://');
     }
-
-    url = url
-        .replaceAll('&edge=curl', '')
-        .replaceAll('?edge=curl&', '?')
-        .replaceAll('?edge=curl', '');
 
     final uri = Uri.tryParse(url);
     if (uri == null || !uri.hasScheme) return null;
@@ -171,7 +169,7 @@ class BookApiService {
     return '$base$checkDigit';
   }
 
-  /// Busca metadados de livro pelo ISBN com estratégia multiprovedor e mesclagem inteligente.
+  /// Busca metadados de livro pelo ISBN exclusivamente na Open Library API.
   Future<BookLookupResult?> lookupBookByIsbn(String rawIsbn) async {
     final cleanIsbn = normalizeIsbn(rawIsbn);
     if (!isValidIsbn(cleanIsbn)) {
@@ -184,46 +182,44 @@ class BookApiService {
 
     try {
       BookLookupResult? result;
-      final googleVolumeIds = <String>[];
 
-      // 1. Consulta primária: Google Books API (ISBN principal e alternativo se faltar dados)
-      result = await _fetchGoogleBooks(cleanIsbn, collectedVolumeIds: googleVolumeIds);
+      // 1. Open Library Books API (ISBN principal e equivalente)
+      result = await _fetchOpenLibraryBooks(cleanIsbn);
       if (_needsEnrichment(result) && alternateIsbn != null) {
-        final altGoogle = await _fetchGoogleBooks(
-          alternateIsbn,
-          collectedVolumeIds: googleVolumeIds,
-        );
-        result = _merge(result, altGoogle, originalIsbn: cleanIsbn);
+        final altBooks = await _fetchOpenLibraryBooks(alternateIsbn);
+        result = _merge(result, altBooks, originalIsbn: cleanIsbn);
       }
 
-      // 2. BrasilAPI (CBL - forte cobertura de livros em português, ISBN principal e alternativo)
+      // 2. Open Library Edition & Works API (/isbn/{isbn}.json -> /works/{id}.json)
       if (_needsEnrichment(result)) {
-        final brasilResult = await _fetchBrasilApi(cleanIsbn);
-        result = _merge(result, brasilResult, originalIsbn: cleanIsbn);
+        final edition = await _fetchOpenLibraryEdition(cleanIsbn);
+        result = _merge(result, edition, originalIsbn: cleanIsbn);
       }
       if (_needsEnrichment(result) && alternateIsbn != null) {
-        final altBrasil = await _fetchBrasilApi(alternateIsbn);
-        result = _merge(result, altBrasil, originalIsbn: cleanIsbn);
+        final altEdition = await _fetchOpenLibraryEdition(alternateIsbn);
+        result = _merge(result, altEdition, originalIsbn: cleanIsbn);
       }
 
-      // 3. Open Library Books API (ISBN principal e alternativo)
+      // 3. Open Library Search API por ISBN (number_of_pages_median, cover_i, first_publish_year)
       if (_needsEnrichment(result)) {
-        final openLibraryResult = await _fetchOpenLibrary(cleanIsbn);
-        result = _merge(result, openLibraryResult, originalIsbn: cleanIsbn);
-      }
-      if (_needsEnrichment(result) && alternateIsbn != null) {
-        final altOpenLibrary = await _fetchOpenLibrary(alternateIsbn);
-        result = _merge(result, altOpenLibrary, originalIsbn: cleanIsbn);
-      }
-
-      // 4. Open Library Search API (number_of_pages_median e cover_i por ISBN)
-      if (_needsCover(result) || _needsPages(result)) {
         final searchResult = await _fetchOpenLibrarySearchByIsbn(cleanIsbn);
         result = _merge(result, searchResult, originalIsbn: cleanIsbn);
       }
-      if ((_needsCover(result) || _needsPages(result)) && alternateIsbn != null) {
+      if (_needsEnrichment(result) && alternateIsbn != null) {
         final altSearchResult = await _fetchOpenLibrarySearchByIsbn(alternateIsbn);
         result = _merge(result, altSearchResult, originalIsbn: cleanIsbn);
+      }
+
+      // 4. Open Library Search API por Título + Autor (recupera capa/páginas de outras edições da mesma obra)
+      if (result != null &&
+          result.title.trim().isNotEmpty &&
+          (_needsCover(result) || _needsPages(result))) {
+        final titleAuthorSearch = await _fetchOpenLibrarySearchByTitleAuthor(
+          result.title,
+          result.author,
+          cleanIsbn,
+        );
+        result = _merge(result, titleAuthorSearch, originalIsbn: cleanIsbn);
       }
 
       // 5. Open Library Covers API direta por ISBN
@@ -235,29 +231,6 @@ class BookApiService {
         }
       }
 
-      // 6. Fallback por Título + Autor (recupera capa e páginas de outras edições da mesma obra)
-      if (result != null &&
-          result.title.trim().isNotEmpty &&
-          (_needsCover(result) || _needsPages(result))) {
-        final fallback = await _fetchByTitleAndAuthor(
-          result.title,
-          result.author,
-          cleanIsbn,
-        );
-        result = _merge(result, fallback, originalIsbn: cleanIsbn);
-      }
-
-      // 7. Último recurso para capa: endpoint de conteúdo direto pelo volumeId do Google Books
-      if (result != null && _needsCover(result) && googleVolumeIds.isNotEmpty) {
-        for (final volumeId in googleVolumeIds.take(2)) {
-          final coverUrl = await _checkGoogleVolumeCover(volumeId);
-          if (coverUrl != null) {
-            result = result?.copyWith(coverUrl: coverUrl);
-            break;
-          }
-        }
-      }
-
       return result;
     } on http.ClientException {
       throw const BookApiException(
@@ -265,7 +238,7 @@ class BookApiService {
       );
     } on TimeoutException {
       throw const BookApiException(
-        'Tempo limite excedido ao consultar serviços de livros. Tente novamente.',
+        'Tempo limite excedido ao consultar a Open Library API. Tente novamente.',
       );
     } on BookApiException {
       rethrow;
@@ -288,7 +261,6 @@ class BookApiService {
     return result == null || result.totalPages <= 0;
   }
 
-  /// Verifica se o resultado necessita de enriquecimento adicional por outros provedores.
   bool _needsEnrichment(BookLookupResult? result) {
     if (result == null) return true;
     return result.title.isEmpty ||
@@ -297,6 +269,20 @@ class BookApiService {
         _needsCover(result) ||
         result.synopsis == null ||
         result.synopsis!.trim().isEmpty;
+  }
+
+  String _decodeResponseBody(http.Response response) {
+    try {
+      return utf8.decode(response.bodyBytes);
+    } on FormatException {
+      return response.body;
+    }
+  }
+
+  int? _extractYear(String? rawDate) {
+    if (rawDate == null) return null;
+    final match = RegExp(r'\b(1[0-9]{3}|20[0-9]{2})\b').firstMatch(rawDate);
+    return match != null ? int.tryParse(match.group(1)!) : null;
   }
 
   /// Mescla dois resultados priorizando os campos válidos e não vazios do resultado base.
@@ -344,254 +330,23 @@ class BookApiService {
     );
   }
 
-  /// Consulta primária: Google Books API (tenta isbn: e query relaxada, varrendo todos os itens)
-  Future<BookLookupResult?> _fetchGoogleBooks(
-    String isbn, {
-    List<String>? collectedVolumeIds,
-  }) async {
-    try {
-      // 1. Busca estrita por isbn:
-      var url = Uri.parse('https://www.googleapis.com/books/v1/volumes?q=isbn:$isbn');
-      var response = await _client.get(url).timeout(const Duration(seconds: 7));
-
-      Map<String, dynamic>? data;
-      if (response.statusCode == 200) {
-        data = json.decode(response.body) as Map<String, dynamic>;
-      }
-
-      int totalItems = (data?['totalItems'] as num?)?.toInt() ?? 0;
-
-      // 2. Se a busca estrita não encontrou itens, tenta busca relaxada por q=$isbn
-      if (totalItems == 0 || data?['items'] == null) {
-        url = Uri.parse('https://www.googleapis.com/books/v1/volumes?q=$isbn');
-        response = await _client.get(url).timeout(const Duration(seconds: 7));
-        if (response.statusCode == 200) {
-          data = json.decode(response.body) as Map<String, dynamic>;
-          totalItems = (data['totalItems'] as num?)?.toInt() ?? 0;
-        }
-      }
-
-      if (totalItems == 0 || data?['items'] == null) {
-        return null;
-      }
-
-      final items = data!['items'] as List<dynamic>;
-      if (items.isEmpty) return null;
-
-      BookLookupResult? merged;
-      final candidateIds = <String>[];
-
-      for (final rawItem in items) {
-        if (rawItem is! Map<String, dynamic>) continue;
-        final volumeId = rawItem['id']?.toString().trim();
-        if (volumeId != null && volumeId.isNotEmpty) {
-          candidateIds.add(volumeId);
-          if (collectedVolumeIds != null && !collectedVolumeIds.contains(volumeId)) {
-            collectedVolumeIds.add(volumeId);
-          }
-        }
-        final parsed = _parseGoogleVolumeItem(rawItem, isbn);
-        merged = _merge(merged, parsed, originalIsbn: isbn);
-      }
-
-      // 3. Se ainda faltar capa ou páginas, consulta o endpoint de detalhes do volume
-      if ((merged == null || _needsCover(merged) || _needsPages(merged)) &&
-          candidateIds.isNotEmpty) {
-        for (final volumeId in candidateIds.take(2)) {
-          final detail = await _fetchGoogleVolumeDetail(volumeId, isbn);
-          merged = _merge(merged, detail, originalIsbn: isbn);
-          if (merged != null && !_needsCover(merged) && !_needsPages(merged)) {
-            break;
-          }
-        }
-      }
-
-      return merged;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  BookLookupResult? _parseGoogleVolumeItem(
-    Map<String, dynamic> item,
-    String isbn,
-  ) {
-    final volumeInfo = item['volumeInfo'] as Map<String, dynamic>?;
-    if (volumeInfo == null) return null;
-
-    final title = (volumeInfo['title'] as String? ?? '').trim();
-    final authorsList = volumeInfo['authors'] as List<dynamic>?;
-    final authorNames = authorsList
-            ?.map((e) => e.toString().trim())
-            .where((name) => name.isNotEmpty)
-            .toList() ??
-        const [];
-    final author = authorNames.isNotEmpty ? authorNames.join(', ') : 'Autor desconhecido';
-
-    final publisher = volumeInfo['publisher'] as String?;
-
-    int? publishedYear;
-    final publishedDate = volumeInfo['publishedDate'] as String?;
-    if (publishedDate != null && publishedDate.length >= 4) {
-      publishedYear = int.tryParse(publishedDate.substring(0, 4));
-    }
-
-    String? genre;
-    final categories = volumeInfo['categories'] as List<dynamic>?;
-    if (categories != null && categories.isNotEmpty) {
-      genre = categories.first.toString();
-    }
-
-    final synopsis = volumeInfo['description'] as String?;
-
-    int totalPages = (volumeInfo['pageCount'] as num?)?.toInt() ??
-        (volumeInfo['printedPageCount'] as num?)?.toInt() ??
-        0;
-    if (totalPages <= 0) {
-      totalPages = extractPagesFromText(volumeInfo['dimensions']?.toString());
-    }
-
-    String? coverUrl;
-    final imageLinks = volumeInfo['imageLinks'] as Map<String, dynamic>?;
-    if (imageLinks != null) {
-      final rawCover = imageLinks['extraLarge'] as String? ??
-          imageLinks['large'] as String? ??
-          imageLinks['medium'] as String? ??
-          imageLinks['small'] as String? ??
-          imageLinks['thumbnail'] as String? ??
-          imageLinks['smallThumbnail'] as String?;
-      coverUrl = normalizeCoverUrl(rawCover);
-    }
-
-    return BookLookupResult(
-      isbn: isbn,
-      title: title,
-      author: author,
-      publisher: publisher,
-      publishedYear: publishedYear,
-      genre: genre,
-      synopsis: synopsis,
-      coverUrl: coverUrl,
-      totalPages: totalPages,
-    );
-  }
-
-  /// Consulta detalhes completos de um volume específico do Google Books (printedPageCount e imageLinks).
-  Future<BookLookupResult?> _fetchGoogleVolumeDetail(String volumeId, String isbn) async {
-    try {
-      final url = Uri.parse('https://www.googleapis.com/books/v1/volumes/$volumeId');
-      final response = await _client.get(url).timeout(const Duration(seconds: 5));
-      if (response.statusCode != 200) return null;
-
-      final data = json.decode(response.body);
-      if (data is! Map<String, dynamic> || data['volumeInfo'] is! Map<String, dynamic>) {
-        return null;
-      }
-      return _parseGoogleVolumeItem(data, isbn);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Valida se há capa direta pelo volumeId no Google Books Content.
-  Future<String?> _checkGoogleVolumeCover(String volumeId) async {
-    try {
-      final coverUrl =
-          'https://books.google.com/books/content?id=$volumeId&printsec=frontcover&img=1&zoom=1';
-      final response = await _client.get(Uri.parse(coverUrl)).timeout(const Duration(seconds: 4));
-      final contentType = response.headers['content-type']?.toLowerCase();
-      final isImage = contentType == null || contentType.startsWith('image/');
-      if (response.statusCode == 200 && isImage && response.bodyBytes.length > 1500) {
-        return coverUrl;
-      }
-      return null;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  String _decodeResponseBody(http.Response response) {
-    try {
-      return utf8.decode(response.bodyBytes);
-    } on FormatException {
-      return response.body;
-    }
-  }
-
-  /// Consulta intermediária: BrasilAPI (base oficial CBL / Mercosul para ISBNs brasileiros)
-  Future<BookLookupResult?> _fetchBrasilApi(String isbn) async {
-    try {
-      final url = Uri.parse('https://brasilapi.com.br/api/isbn/v1/$isbn');
-      final response = await _client.get(url).timeout(const Duration(seconds: 7));
-
-      if (response.statusCode != 200) {
-        return null;
-      }
-
-      final data = json.decode(_decodeResponseBody(response)) as Map<String, dynamic>;
-      final title = (data['title'] as String? ?? '').trim();
-      if (title.isEmpty) return null;
-
-      String author = 'Autor desconhecido';
-      final authorsList = data['authors'] as List<dynamic>?;
-      if (authorsList != null && authorsList.isNotEmpty) {
-        final names = authorsList
-            .map((e) => e.toString().trim())
-            .where((name) => name.isNotEmpty)
-            .toList();
-        if (names.isNotEmpty) {
-          author = names.join(', ');
-        }
-      }
-
-      final publisher = data['publisher'] as String?;
-      final publishedYear = (data['year'] as num?)?.toInt();
-
-      String? genre;
-      final subjects = data['subjects'] as List<dynamic>?;
-      if (subjects != null && subjects.isNotEmpty) {
-        genre = subjects.first.toString().trim();
-      }
-
-      final synopsis = data['synopsis'] as String?;
-      final rawPages = data['page_count'];
-      final totalPages = rawPages is num
-          ? rawPages.toInt()
-          : extractPagesFromText(rawPages?.toString());
-
-      final coverUrl = normalizeCoverUrl(data['cover_url'] as String?);
-
-      return BookLookupResult(
-        isbn: isbn,
-        title: title,
-        author: author,
-        publisher: publisher,
-        publishedYear: publishedYear,
-        genre: genre,
-        synopsis: synopsis,
-        coverUrl: coverUrl,
-        totalPages: totalPages,
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Consulta fallback: Open Library API
-  Future<BookLookupResult?> _fetchOpenLibrary(String isbn) async {
+  /// Consulta Open Library Books API (/api/books).
+  Future<BookLookupResult?> _fetchOpenLibraryBooks(String isbn) async {
     try {
       final url = Uri.parse(
         'https://openlibrary.org/api/books?bibkeys=ISBN:$isbn&jscmd=data&format=json',
       );
-      final response = await _client.get(url).timeout(const Duration(seconds: 7));
+      final response = await _client
+          .get(url, headers: _jsonHeaders)
+          .timeout(const Duration(seconds: 8));
 
-      if (response.statusCode != 200) {
-        return null;
-      }
+      if (response.statusCode != 200) return null;
 
-      final data = json.decode(response.body) as Map<String, dynamic>;
+      final data = json.decode(_decodeResponseBody(response));
+      if (data is! Map<String, dynamic>) return null;
+
       final key = 'ISBN:$isbn';
-      if (!data.containsKey(key)) {
+      if (!data.containsKey(key) || data[key] is! Map<String, dynamic>) {
         return null;
       }
 
@@ -602,7 +357,8 @@ class BookApiService {
       final authorsList = bookData['authors'] as List<dynamic>?;
       if (authorsList != null && authorsList.isNotEmpty) {
         final names = authorsList
-            .map((a) => (a as Map<String, dynamic>)['name']?.toString().trim() ?? '')
+            .whereType<Map<String, dynamic>>()
+            .map((a) => a['name']?.toString().trim() ?? '')
             .where((name) => name.isNotEmpty)
             .toList();
         if (names.isNotEmpty) {
@@ -613,22 +369,21 @@ class BookApiService {
       String? publisher;
       final publishersList = bookData['publishers'] as List<dynamic>?;
       if (publishersList != null && publishersList.isNotEmpty) {
-        publisher = (publishersList.first as Map<String, dynamic>)['name']?.toString();
-      }
-
-      int? publishedYear;
-      final publishDate = bookData['publish_date'] as String?;
-      if (publishDate != null) {
-        final match = RegExp(r'\b(19\d\d|20\d\d)\b').firstMatch(publishDate);
-        if (match != null) {
-          publishedYear = int.tryParse(match.group(1)!);
+        final first = publishersList.first;
+        if (first is Map<String, dynamic>) {
+          publisher = first['name']?.toString().trim();
         }
       }
+
+      final publishedYear = _extractYear(bookData['publish_date'] as String?);
 
       String? genre;
       final subjects = bookData['subjects'] as List<dynamic>?;
       if (subjects != null && subjects.isNotEmpty) {
-        genre = (subjects.first as Map<String, dynamic>)['name']?.toString();
+        final first = subjects.first;
+        if (first is Map<String, dynamic>) {
+          genre = first['name']?.toString().trim();
+        }
       }
 
       int totalPages = (bookData['number_of_pages'] as num?)?.toInt() ?? 0;
@@ -645,6 +400,15 @@ class BookApiService {
         synopsis = notes.trim();
       } else if (notes is Map<String, dynamic> && notes['value'] != null) {
         synopsis = notes['value'].toString().trim();
+      }
+      if (synopsis == null || synopsis.isEmpty) {
+        final excerpts = bookData['excerpts'] as List<dynamic>?;
+        if (excerpts != null && excerpts.isNotEmpty) {
+          final firstExcerpt = excerpts.first;
+          if (firstExcerpt is Map<String, dynamic> && firstExcerpt['text'] != null) {
+            synopsis = firstExcerpt['text'].toString().trim();
+          }
+        }
       }
 
       String? coverUrl;
@@ -673,17 +437,122 @@ class BookApiService {
     }
   }
 
+  /// Consulta Open Library Edition API (/isbn/{isbn}.json) e Work API (/works/{id}.json).
+  Future<BookLookupResult?> _fetchOpenLibraryEdition(String isbn) async {
+    try {
+      final url = Uri.parse('https://openlibrary.org/isbn/$isbn.json');
+      final response = await _client
+          .get(url, headers: _jsonHeaders)
+          .timeout(const Duration(seconds: 7));
+
+      if (response.statusCode != 200) return null;
+
+      final data = json.decode(_decodeResponseBody(response));
+      if (data is! Map<String, dynamic>) return null;
+
+      final title = (data['title'] as String? ?? '').trim();
+
+      String? publisher;
+      final publishers = data['publishers'] as List<dynamic>?;
+      if (publishers != null && publishers.isNotEmpty) {
+        publisher = publishers.first.toString().trim();
+      }
+
+      final publishedYear = _extractYear(data['publish_date'] as String?);
+
+      int totalPages = (data['number_of_pages'] as num?)?.toInt() ?? 0;
+      if (totalPages <= 0) {
+        totalPages = extractPagesFromText(data['pagination']?.toString());
+      }
+
+      String? coverUrl;
+      final covers = data['covers'] as List<dynamic>?;
+      if (covers != null && covers.isNotEmpty) {
+        final coverId = (covers.first as num?)?.toInt();
+        if (coverId != null && coverId > 0) {
+          coverUrl = 'https://covers.openlibrary.org/b/id/$coverId-L.jpg';
+        }
+      }
+
+      String? synopsis = _extractDescriptionText(data['description']);
+      String? genre;
+
+      final works = data['works'] as List<dynamic>?;
+      if (works != null && works.isNotEmpty) {
+        final firstWork = works.first;
+        final workKey = firstWork is Map<String, dynamic> ? firstWork['key']?.toString() : null;
+        if (workKey != null && workKey.startsWith('/works/')) {
+          final workInfo = await _fetchOpenLibraryWork(workKey);
+          synopsis ??= workInfo.synopsis;
+          genre ??= workInfo.genre;
+        }
+      }
+
+      return BookLookupResult(
+        isbn: isbn,
+        title: title,
+        author: 'Autor desconhecido',
+        publisher: publisher,
+        publishedYear: publishedYear,
+        genre: genre,
+        synopsis: synopsis,
+        coverUrl: coverUrl,
+        totalPages: totalPages,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<({String? synopsis, String? genre})> _fetchOpenLibraryWork(String workKey) async {
+    try {
+      final url = Uri.parse('https://openlibrary.org$workKey.json');
+      final response = await _client
+          .get(url, headers: _jsonHeaders)
+          .timeout(const Duration(seconds: 6));
+
+      if (response.statusCode != 200) return (synopsis: null, genre: null);
+
+      final data = json.decode(_decodeResponseBody(response));
+      if (data is! Map<String, dynamic>) return (synopsis: null, genre: null);
+
+      final synopsis = _extractDescriptionText(data['description']);
+      String? genre;
+      final subjects = data['subjects'] as List<dynamic>?;
+      if (subjects != null && subjects.isNotEmpty) {
+        genre = subjects.first.toString().trim();
+      }
+      return (synopsis: synopsis, genre: genre);
+    } catch (_) {
+      return (synopsis: null, genre: null);
+    }
+  }
+
+  String? _extractDescriptionText(dynamic raw) {
+    if (raw is String && raw.trim().isNotEmpty) {
+      return raw.trim();
+    }
+    if (raw is Map<String, dynamic> && raw['value'] != null) {
+      final val = raw['value'].toString().trim();
+      return val.isEmpty ? null : val;
+    }
+    return null;
+  }
+
   /// Consulta Open Library Search API por ISBN para recuperar number_of_pages_median e cover_i.
   Future<BookLookupResult?> _fetchOpenLibrarySearchByIsbn(String isbn) async {
     try {
       final url = Uri.https('openlibrary.org', '/search.json', {
         'isbn': isbn,
-        'fields': 'title,author_name,number_of_pages_median,cover_i,first_publish_year,publisher,subject',
+        'fields':
+            'title,author_name,number_of_pages_median,cover_i,first_publish_year,publisher,subject',
       });
-      final response = await _client.get(url).timeout(const Duration(seconds: 6));
+      final response = await _client
+          .get(url, headers: _jsonHeaders)
+          .timeout(const Duration(seconds: 7));
       if (response.statusCode != 200) return null;
 
-      final data = json.decode(response.body);
+      final data = json.decode(_decodeResponseBody(response));
       if (data is! Map<String, dynamic>) return null;
       final docs = data['docs'];
       if (docs is! List || docs.isEmpty) return null;
@@ -752,13 +621,12 @@ class BookApiService {
     );
   }
 
-  /// Verifica se a Open Library possui capa direta para o ISBN via serviço de Covers.
+  /// Verifica se a Open Library possui capa direta para o ISBN via Covers API.
   Future<String?> _checkOpenLibraryCover(String isbn) async {
     try {
       final coverUrl = 'https://covers.openlibrary.org/b/isbn/$isbn-L.jpg?default=false';
       final response = await _client.get(Uri.parse(coverUrl)).timeout(const Duration(seconds: 4));
 
-      // Se existir, a Open Library retorna 200. Quando não existe e default=false, retorna 404
       if (response.statusCode == 200 && response.bodyBytes.length > 500) {
         return 'https://covers.openlibrary.org/b/isbn/$isbn-L.jpg';
       }
@@ -768,71 +636,7 @@ class BookApiService {
     }
   }
 
-  /// Fallback por Título + Autor para recuperar capa e páginas de outras edições da mesma obra.
-  Future<BookLookupResult?> _fetchByTitleAndAuthor(
-    String title,
-    String author,
-    String originalIsbn,
-  ) async {
-    BookLookupResult? merged = await _fetchGoogleBooksByTitleAuthor(
-      title,
-      author,
-      originalIsbn,
-    );
-
-    if (_needsCover(merged) || _needsPages(merged)) {
-      final olSearch = await _fetchOpenLibrarySearchByTitleAuthor(
-        title,
-        author,
-        originalIsbn,
-      );
-      merged = _merge(merged, olSearch, originalIsbn: originalIsbn);
-    }
-
-    return merged;
-  }
-
-  Future<BookLookupResult?> _fetchGoogleBooksByTitleAuthor(
-    String title,
-    String author,
-    String originalIsbn,
-  ) async {
-    try {
-      final cleanTitle = title.trim();
-      if (cleanTitle.isEmpty) return null;
-
-      final firstAuthor = _extractPrimaryAuthor(author);
-      final query = firstAuthor != null
-          ? 'intitle:"$cleanTitle"+inauthor:"$firstAuthor"'
-          : 'intitle:"$cleanTitle"';
-
-      final url = Uri.https('www.googleapis.com', '/books/v1/volumes', {
-        'q': query,
-        'maxResults': '5',
-      });
-      final response = await _client.get(url).timeout(const Duration(seconds: 6));
-      if (response.statusCode != 200) return null;
-
-      final data = json.decode(response.body);
-      if (data is! Map<String, dynamic>) return null;
-      final items = data['items'];
-      if (items is! List || items.isEmpty) return null;
-
-      BookLookupResult? merged;
-      for (final rawItem in items.take(5)) {
-        if (rawItem is! Map<String, dynamic>) continue;
-        final parsed = _parseGoogleVolumeItem(rawItem, originalIsbn);
-        if (parsed == null) continue;
-        if (_titlesRoughlyMatch(cleanTitle, parsed.title)) {
-          merged = _merge(merged, parsed, originalIsbn: originalIsbn);
-        }
-      }
-      return merged;
-    } catch (_) {
-      return null;
-    }
-  }
-
+  /// Fallback por Título + Autor na Open Library Search API para completar capa/páginas.
   Future<BookLookupResult?> _fetchOpenLibrarySearchByTitleAuthor(
     String title,
     String author,
@@ -853,10 +657,12 @@ class BookApiService {
       }
 
       final url = Uri.https('openlibrary.org', '/search.json', params);
-      final response = await _client.get(url).timeout(const Duration(seconds: 6));
+      final response = await _client
+          .get(url, headers: _jsonHeaders)
+          .timeout(const Duration(seconds: 6));
       if (response.statusCode != 200) return null;
 
-      final data = json.decode(response.body);
+      final data = json.decode(_decodeResponseBody(response));
       if (data is! Map<String, dynamic>) return null;
       final docs = data['docs'];
       if (docs is! List || docs.isEmpty) return null;
@@ -917,4 +723,3 @@ class BookApiService {
         .trim();
   }
 }
-

@@ -1,3 +1,4 @@
+import '../../data/services/notification_service.dart';
 import '../repositories/book_repository.dart';
 import '../repositories/loan_repository.dart';
 import '../repositories/note_repository.dart';
@@ -10,18 +11,25 @@ class DeleteBookUseCase {
   final NoteRepository _noteRepository;
   final LoanRepository _loanRepository;
   final SessionRepository _sessionRepository;
+  final NotificationService? _notificationService;
 
   DeleteBookUseCase({
     required BookRepository bookRepository,
     required NoteRepository noteRepository,
     required LoanRepository loanRepository,
     required SessionRepository sessionRepository,
+    NotificationService? notificationService,
   })  : _bookRepository = bookRepository,
         _noteRepository = noteRepository,
         _loanRepository = loanRepository,
-        _sessionRepository = sessionRepository;
+        _sessionRepository = sessionRepository,
+        _notificationService = notificationService;
 
   Future<void> execute(String bookId) async {
+    final activeLoan = await _loanRepository.getActiveLoanByBook(bookId);
+    if (activeLoan?.notificationId != null) {
+      await _notificationService?.cancelNotification(activeLoan!.notificationId!);
+    }
     await _noteRepository.deleteNotesByBook(bookId);
     await _loanRepository.deleteLoansByBook(bookId);
     await _sessionRepository.deleteSessionsByBook(bookId);

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../data/services/export_service.dart';
+import '../../../../domain/models/enums.dart';
 
 /// Modal bottom sheet para Exportação (PDF/CSV) e Backup JSON no padrão Stitch.
 class ExportDataSheet extends StatefulWidget {
@@ -57,7 +57,7 @@ class _ExportDataSheetState extends State<ExportDataSheet> {
     final isDark = theme.brightness == Brightness.dark;
 
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -268,23 +268,25 @@ class _ExportDataSheetState extends State<ExportDataSheet> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         title: const Text('Restaurar Backup (JSON)'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Cole abaixo o conteúdo do arquivo JSON de backup gerado pelo Booky:',
-              style: TextStyle(fontSize: 12),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: jsonCtrl,
-              maxLines: 6,
-              decoration: const InputDecoration(
-                hintText: '{"version": "1.0.0", "collections": { ... }}',
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Cole abaixo o conteúdo do arquivo JSON de backup gerado pelo Booky:',
+                style: TextStyle(fontSize: 12),
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              TextField(
+                controller: jsonCtrl,
+                maxLines: 6,
+                decoration: const InputDecoration(
+                  hintText: '{"version": "1.0.0", "collections": { ... }}',
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(

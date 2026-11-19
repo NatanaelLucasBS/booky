@@ -44,13 +44,18 @@ class ReadingChartsSection extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'HISTÓRICO MENSAL',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  letterSpacing: 1.5,
-                  fontWeight: FontWeight.bold,
+              Flexible(
+                child: Text(
+                  'HISTÓRICO MENSAL',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               // Segmented Control Editorial Stitch
               Container(
                 decoration: BoxDecoration(

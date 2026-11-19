@@ -93,6 +93,7 @@ class BackupSyncService {
 
       final list = entry.value;
       if (list is List) {
+        await _storageService.clearCollection(targetCol);
         for (final item in list) {
           if (item is Map<String, dynamic>) {
             final id = (item['id'] as String?) ??

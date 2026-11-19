@@ -92,6 +92,11 @@ class _BookDetailsContentState extends State<_BookDetailsContent> {
                     ),
                   );
                   Navigator.of(context).pop();
+                } else if (context.mounted && vm.errorMessage != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(vm.errorMessage!)),
+                  );
+                  vm.clearMessages();
                 }
               },
               child: const Text('EXCLUIR', style: TextStyle(color: AppColors.lightCream)),
@@ -111,12 +116,27 @@ class _BookDetailsContentState extends State<_BookDetailsContent> {
         required loanDate,
         required expectedReturnDate,
       }) async {
-        return await vm.registerLoan(
+        final ok = await vm.registerLoan(
           borrowerName: borrowerName,
           borrowerContact: borrowerContact,
           loanDate: loanDate,
           expectedReturnDate: expectedReturnDate,
         );
+        if (context.mounted && vm.errorMessage != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(vm.errorMessage!)),
+          );
+          vm.clearMessages();
+        } else if (context.mounted && ok && vm.successMessage != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(vm.successMessage!),
+              backgroundColor: AppColors.woodBrown,
+            ),
+          );
+          vm.clearMessages();
+        }
+        return ok;
       },
     );
   }
@@ -131,7 +151,16 @@ class _BookDetailsContentState extends State<_BookDetailsContent> {
       context,
       type: type,
       existingNote: existingNote,
-      onOcrCapture: (source) => vm.extractTextFromOcr(source: source),
+      onOcrCapture: (source) async {
+        final text = await vm.extractTextFromOcr(source: source);
+        if (context.mounted && vm.errorMessage != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(vm.errorMessage!)),
+          );
+          vm.clearMessages();
+        }
+        return text;
+      },
       onSave: ({required type, required content, chapter, page, noteId}) async {
         await vm.saveNote(
           type: type,
@@ -140,6 +169,12 @@ class _BookDetailsContentState extends State<_BookDetailsContent> {
           page: page,
           noteId: noteId,
         );
+        if (context.mounted && vm.errorMessage != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(vm.errorMessage!)),
+          );
+          vm.clearMessages();
+        }
       },
     );
   }
@@ -291,12 +326,24 @@ class _BookDetailsContentState extends State<_BookDetailsContent> {
                       ),
                       const SizedBox(height: 10),
 
-                      // Badges de Status e Formato
+                      // Badges de Status (interativo) e Formato
                       Wrap(
                         spacing: 6,
                         runSpacing: 6,
                         children: [
-                          _buildBadge(book.status.label.toUpperCase(), isDark),
+                          PopupMenuButton<BookStatus>(
+                            tooltip: 'Alterar status de leitura',
+                            onSelected: vm.updateStatus,
+                            itemBuilder: (_) => BookStatus.values
+                                .map(
+                                  (s) => PopupMenuItem<BookStatus>(
+                                    value: s,
+                                    child: Text(s.label),
+                                  ),
+                                )
+                                .toList(),
+                            child: _buildBadge('${book.status.label.toUpperCase()} ▾', isDark),
+                          ),
                           _buildBadge(book.format.label.toUpperCase(), isDark),
                         ],
                       ),
@@ -426,14 +473,17 @@ class _BookDetailsContentState extends State<_BookDetailsContent> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('LIVRO NA SUA ESTANTE', style: theme.textTheme.labelSmall),
-                    const SizedBox(height: 2),
-                    Text('Disponível para empréstimo', style: theme.textTheme.bodySmall),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('LIVRO NA SUA ESTANTE', style: theme.textTheme.labelSmall),
+                      const SizedBox(height: 2),
+                      Text('Disponível para empréstimo', style: theme.textTheme.bodySmall),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 OutlinedButton.icon(
                   onPressed: () => _openLoanDialog(context, vm),
                   icon: const Icon(Icons.share, size: 14),
@@ -474,10 +524,14 @@ class _BookDetailsContentState extends State<_BookDetailsContent> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 4,
                 children: [
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         isOverdue ? Icons.warning_amber : Icons.bookmark_border,
@@ -511,7 +565,23 @@ class _BookDetailsContentState extends State<_BookDetailsContent> {
               ),
               const SizedBox(height: 12),
               ElevatedButton.icon(
-                onPressed: () => vm.returnLoan(),
+                onPressed: () async {
+                  final ok = await vm.returnLoan();
+                  if (context.mounted && vm.errorMessage != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(vm.errorMessage!)),
+                    );
+                    vm.clearMessages();
+                  } else if (context.mounted && ok && vm.successMessage != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(vm.successMessage!),
+                        backgroundColor: AppColors.woodBrown,
+                      ),
+                    );
+                    vm.clearMessages();
+                  }
+                },
                 icon: const Icon(Icons.check, size: 16),
                 label: const Text('REGISTRAR DEVOLUÇÃO'),
               ),

@@ -194,23 +194,25 @@ class _AddBookContentState extends State<_AddBookContent> {
       builder: (dialogCtx) {
         return AlertDialog(
           title: const Text('Nova Estante Temática'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Nome da Estante (ex: Favoritos, Sci-Fi)',
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Nome da Estante (ex: Favoritos, Sci-Fi)',
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Descrição (opcional)',
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Descrição (opcional)',
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -568,7 +570,7 @@ class _AddBookContentState extends State<_AddBookContent> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildFieldLabel('ISBN (10 ou 13 dígitos)'),
+                  _buildFieldLabel('ISBN'),
                   const SizedBox(height: 6),
                   TextField(
                     controller: _isbnManualController,

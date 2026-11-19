@@ -29,7 +29,7 @@ class SaveReadingSessionUseCase {
     final now = DateTime.now();
     final pagesRead = max(0, endPage - startPage);
     final dateKey =
-        '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+        '${startTime.year.toString().padLeft(4, '0')}-${startTime.month.toString().padLeft(2, '0')}-${startTime.day.toString().padLeft(2, '0')}';
 
     final session = ReadingSessionModel(
       id: const Uuid().v4(),

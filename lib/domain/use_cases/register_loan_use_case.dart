@@ -28,7 +28,13 @@ class RegisterLoanUseCase {
       throw ArgumentError('O nome do amigo é obrigatório para registrar o empréstimo.');
     }
 
-    if (expectedReturnDate.isBefore(loanDate)) {
+    final loanDay = DateTime(loanDate.year, loanDate.month, loanDate.day);
+    final returnDay = DateTime(
+      expectedReturnDate.year,
+      expectedReturnDate.month,
+      expectedReturnDate.day,
+    );
+    if (returnDay.isBefore(loanDay)) {
       throw ArgumentError('A data prevista de devolução não pode ser anterior à data do empréstimo.');
     }
 

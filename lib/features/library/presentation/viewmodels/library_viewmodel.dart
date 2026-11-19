@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
 import '../../../../data/services/backup_sync_service.dart';
-import '../../../../data/services/export_service.dart';
 import '../../../../domain/models/book_model.dart';
 import '../../../../domain/models/enums.dart';
 import '../../../../domain/models/loan_model.dart';
@@ -273,7 +273,7 @@ class LibraryViewModel extends ChangeNotifier {
     if (clean.isEmpty) return;
 
     final newShelf = ShelfModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: const Uuid().v4(),
       name: clean,
       description: description?.trim().isEmpty ?? true ? null : description!.trim(),
       createdAt: DateTime.now(),

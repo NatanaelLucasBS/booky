@@ -73,6 +73,7 @@ void main() {
       noteRepository: noteRepo,
       loanRepository: loanRepo,
       sessionRepository: sessionRepo,
+      notificationService: notificationService,
     );
   });
 
@@ -233,6 +234,11 @@ void main() {
       expect(vm.book?.status, BookStatus.read);
       expect(vm.book?.currentPage, 200);
       expect(vm.book?.finishedAt, isNotNull);
+
+      await vm.updateStatus(BookStatus.reading);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(vm.book?.status, BookStatus.reading);
+      expect(vm.book?.finishedAt, isNull);
     });
   });
 }
