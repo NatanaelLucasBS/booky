@@ -1,6 +1,6 @@
 import '../models/note_model.dart';
 
-/// Contrato canônico do Repositório de Anotações, Citações e Resenhas (SSOT).
+// Repositório de anotações, citações e resenhas
 abstract interface class NoteRepository {
   Stream<List<NoteModel>> watchNotesByBook(String bookId);
   Future<void> saveNote(NoteModel note);

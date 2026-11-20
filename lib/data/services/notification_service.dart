@@ -2,8 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-/// Serviço stateless de Notificações Locais para alertas de empréstimos e lembretes.
-/// Slide 25 da Aula 24 (Arquitetura Flutter).
+// Serviço de notificações locais (empréstimos e lembrete diário)
 class NotificationService {
   static const int dailyReadingReminderId = 999001;
 

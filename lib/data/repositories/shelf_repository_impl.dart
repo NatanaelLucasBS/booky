@@ -3,7 +3,7 @@ import '../../domain/models/shelf_model.dart';
 import '../../domain/repositories/shelf_repository.dart';
 import '../services/storage_service.dart';
 
-/// Implementação da Fonte Única de Verdade (SSOT) para Estantes Temáticas.
+// Implementação do repositório de estantes
 class ShelfRepositoryImpl implements ShelfRepository {
   static const String _collection = 'shelves';
   final StorageService _storage;
@@ -21,7 +21,7 @@ class ShelfRepositoryImpl implements ShelfRepository {
     _controller.add(List.unmodifiable(_cache));
   }
 
-  /// Recarrega o cache a partir do StorageService e notifica os streams SSOT.
+  // Recarrega os dados salvos localmente
   Future<void> reload() async {
     _initialized = false;
     await _ensureInitialized();

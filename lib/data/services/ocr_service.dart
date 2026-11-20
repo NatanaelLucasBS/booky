@@ -3,8 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
 
-/// Serviço stateless de OCR local para extrair trechos de páginas físicas de livros.
-/// Slide 25 da Aula 24 (Arquitetura Flutter).
+// Serviço de reconhecimento de texto (OCR) com Google ML Kit
 class OcrService {
   final ImagePicker _picker;
 

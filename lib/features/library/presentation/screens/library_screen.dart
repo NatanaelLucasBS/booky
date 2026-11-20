@@ -16,9 +16,7 @@ import '../widgets/advanced_filter_sheet.dart';
 import '../widgets/export_data_sheet.dart';
 import '../widgets/shelves_manager_sheet.dart';
 
-/// Tela 03: Minha Biblioteca
-/// Estante pessoal completa com filtros por status, pesquisa dinâmica,
-/// busca avançada combinada, gestão de estantes e tags de livros emprestados/atrasados.
+// Tela da biblioteca pessoal
 class LibraryScreen extends StatelessWidget {
   const LibraryScreen({super.key});
 

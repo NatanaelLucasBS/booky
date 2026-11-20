@@ -3,8 +3,7 @@ import '../../domain/models/book_model.dart';
 import '../../domain/repositories/book_repository.dart';
 import '../services/storage_service.dart';
 
-/// Implementação da Fonte Única de Verdade (SSOT) para Livros.
-/// Consome StorageService e não depende de nenhum outro Repositório (Slide 23 da Aula 24).
+// Implementação do repositório de livros
 class BookRepositoryImpl implements BookRepository {
   static const String _collection = 'books';
   final StorageService _storage;
@@ -22,7 +21,7 @@ class BookRepositoryImpl implements BookRepository {
     _controller.add(List.unmodifiable(_cache));
   }
 
-  /// Recarrega o cache a partir do StorageService e notifica os streams SSOT.
+  // Recarrega os dados salvos localmente
   Future<void> reload() async {
     _initialized = false;
     await _ensureInitialized();

@@ -1,7 +1,6 @@
 import '../../data/services/backup_sync_service.dart';
 
-/// Orquestra a restauração de backup JSON via [BackupSyncService] e recarrega
-/// os repositórios SSOT para que todas as telas atualizem imediatamente via Stream.
+// Caso de uso para restaurar o backup e recarregar os repositórios
 class RestoreBackupUseCase {
   final BackupSyncService _backupSyncService;
   final List<Future<void> Function()> _onReloadRepositories;

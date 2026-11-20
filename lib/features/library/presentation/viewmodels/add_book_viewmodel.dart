@@ -8,8 +8,7 @@ import '../../../../domain/models/shelf_model.dart';
 import '../../../../domain/repositories/book_repository.dart';
 import '../../../../domain/repositories/shelf_repository.dart';
 
-/// ViewModel para a tela de adicionar/editar livro (relação 1:1 com AddBookScreen).
-/// Slide 15 e 18 da Aula 24 (Arquitetura Flutter).
+// ViewModel da tela de adicionar e editar livro
 class AddBookViewModel extends ChangeNotifier {
   final BookRepository _bookRepository;
   final ShelfRepository _shelfRepository;

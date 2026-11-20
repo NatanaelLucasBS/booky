@@ -81,8 +81,7 @@ class AdvancedFilters {
   }
 }
 
-/// ViewModel para a estante/biblioteca (relação 1:1 com LibraryScreen).
-/// Slide 15 da Aula 24 (Arquitetura Flutter).
+// ViewModel da tela da biblioteca
 class LibraryViewModel extends ChangeNotifier {
   final BookRepository _bookRepository;
   final LoanRepository _loanRepository;

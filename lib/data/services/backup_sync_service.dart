@@ -6,8 +6,7 @@ import 'package:share_plus/share_plus.dart';
 
 import 'storage_service.dart';
 
-/// Serviço stateless para geração de Backup e Restauração/Sincronização dos dados locais.
-/// Slide 25 da Aula 24 (Arquitetura Recomendada).
+// Serviço de backup e restauração dos dados locais
 class BackupSyncService {
   final StorageService _storageService;
 

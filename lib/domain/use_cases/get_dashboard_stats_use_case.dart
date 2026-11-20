@@ -51,8 +51,7 @@ class MonthlyReadingStat {
   });
 }
 
-/// UseCase orquestrador do Dashboard (Slide 23 e 27 da Aula 24 - Arquitetura Recomendada).
-/// Repositórios nunca dependem entre si; UseCases agregam múltiplos repositórios.
+// Caso de uso para calcular as estatísticas do Dashboard
 class GetDashboardStatsUseCase {
   final BookRepository _bookRepository;
   final SessionRepository _sessionRepository;

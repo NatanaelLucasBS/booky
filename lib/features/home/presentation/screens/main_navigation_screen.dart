@@ -3,9 +3,7 @@ import '../../../../core/theme/theme_controller.dart';
 import '../screens/home_screen.dart';
 import '../../../library/presentation/screens/library_screen.dart';
 
-/// Container de navegação principal com BottomNavigationBar nas 2 abas essenciais:
-/// 1. Início (Dashboard de Leitura, Metas & Leitura Atual)
-/// 2. Minha Biblioteca (Estante Pessoal, Filtros Avançados & Gestão de Estantes)
+// Tela principal com navegação entre Início e Biblioteca
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 

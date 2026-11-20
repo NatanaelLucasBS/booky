@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Controlador reativo simples para alternar entre ThemeMode.light e ThemeMode.dark.
+// Controlador do tema claro e escuro
 class ThemeController extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.light;
 
@@ -20,5 +20,4 @@ class ThemeController extends ChangeNotifier {
   }
 }
 
-/// Instância global singleton para acesso facilitado e sem boilerplate
 final themeController = ThemeController();

@@ -2,8 +2,7 @@ import '../../data/services/export_service.dart';
 import '../models/enums.dart';
 import '../repositories/book_repository.dart';
 
-/// Caso de Uso para exportação da biblioteca (PDF ou CSV).
-/// Orquestra a filtragem pelo escopo e aciona o ExportService stateless.
+// Caso de uso para exportação da biblioteca em PDF ou CSV
 class ExportLibraryUseCase {
   final BookRepository _bookRepository;
   final ExportService _exportService;

@@ -3,7 +3,7 @@ import '../../domain/models/app_settings_model.dart';
 import '../../domain/repositories/settings_repository.dart';
 import '../services/storage_service.dart';
 
-/// Implementação da persistência de Configurações do Leitor (Meta Anual e Lembretes).
+// Implementação do repositório de configurações
 class SettingsRepositoryImpl implements SettingsRepository {
   static const String _collection = 'settings';
   static const String _settingsId = 'app_settings';
@@ -28,7 +28,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
     _controller.add(_cache!);
   }
 
-  /// Recarrega o cache a partir do StorageService e notifica os streams SSOT.
+  // Recarrega os dados salvos localmente
   Future<void> reload() async {
     _initialized = false;
     await _ensureInitialized();

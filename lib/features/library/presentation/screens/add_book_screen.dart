@@ -10,8 +10,7 @@ import '../../../../domain/repositories/book_repository.dart';
 import '../../../../domain/repositories/shelf_repository.dart';
 import '../viewmodels/add_book_viewmodel.dart';
 
-/// Tela 07: Adicionar ou Editar Livro
-/// Catalogação via scanner ótico de ISBN (câmera) ou formulário manual completo.
+// Tela de cadastro e edição de livro
 class AddBookScreen extends StatelessWidget {
   final BookModel? bookToEdit;
 
@@ -392,7 +391,7 @@ class _AddBookContentState extends State<_AddBookContent> {
                 ),
               ),
 
-              // Cantoneiras estéticas do visor Stitch
+              // Bordas do visor da câmera
               Positioned(
                 top: 10,
                 left: 10,
@@ -684,7 +683,7 @@ class _AddBookContentState extends State<_AddBookContent> {
 
         const SizedBox(height: 16),
 
-        _buildFieldLabel('Formato do Livro (Tema 6)'),
+        _buildFieldLabel('Formato do Livro'),
         const SizedBox(height: 8),
         Row(
           children: [
@@ -710,7 +709,7 @@ class _AddBookContentState extends State<_AddBookContent> {
 
         const SizedBox(height: 16),
 
-        // Status Canônicos do Tema 6 (4 opções mutuamente exclusivas)
+        // Status de leitura
         _buildFieldLabel('Status na Estante'),
         const SizedBox(height: 8),
         Wrap(

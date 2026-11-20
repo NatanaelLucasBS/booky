@@ -8,7 +8,7 @@ import '../repositories/book_repository.dart';
 import '../repositories/session_repository.dart';
 
 /// Caso de Uso para salvar uma sessão de leitura.
-/// Orquestra SessionRepository e BookRepository sem acoplamento mútuo (Slide 23 da Aula 24).
+/// Orquestra SessionRepository e BookRepository sem acoplamento mútuo.
 class SaveReadingSessionUseCase {
   final SessionRepository _sessionRepository;
   final BookRepository _bookRepository;

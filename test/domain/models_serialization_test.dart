@@ -8,7 +8,7 @@ import 'package:booky/domain/models/reading_session_model.dart';
 import 'package:booky/domain/models/shelf_model.dart';
 
 void main() {
-  group('Serialização dos 6 Modelos Canônicos (toJson / fromJson)', () {
+  group('Serialização dos modelos (toJson / fromJson)', () {
     test('AppSettingsModel serializa e desserializa corretamente', () {
       final now = DateTime(2026, 11, 15, 14, 30);
       final original = AppSettingsModel(

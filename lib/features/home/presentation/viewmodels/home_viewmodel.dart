@@ -22,8 +22,7 @@ enum ChartMetric {
       };
 }
 
-/// ViewModel da tela inicial (Dashboard de Leitura). Relação 1:1 com HomeScreen.
-/// Slide 15 da Aula 24 (Arquitetura Recomendada).
+// ViewModel da tela inicial (Dashboard)
 class HomeViewModel extends ChangeNotifier {
   final BookRepository _bookRepository;
   final SessionRepository _sessionRepository;

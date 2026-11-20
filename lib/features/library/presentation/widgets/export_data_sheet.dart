@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../domain/models/enums.dart';
 
-/// Modal bottom sheet para Exportação (PDF/CSV) e Backup JSON no padrão Stitch.
+// Modal de exportação (PDF/CSV) e backup JSON
 class ExportDataSheet extends StatefulWidget {
   final Future<void> Function({
     required ExportScope scope,
@@ -63,7 +63,7 @@ class _ExportDataSheetState extends State<ExportDataSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Cabeçalho Editorial
+            // Cabeçalho
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

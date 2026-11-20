@@ -3,7 +3,7 @@ import '../../domain/models/loan_model.dart';
 import '../../domain/repositories/loan_repository.dart';
 import '../services/storage_service.dart';
 
-/// Implementação da Fonte Única de Verdade (SSOT) para Empréstimos.
+// Implementação do repositório de empréstimos
 class LoanRepositoryImpl implements LoanRepository {
   static const String _collection = 'loans';
   final StorageService _storage;
@@ -21,7 +21,7 @@ class LoanRepositoryImpl implements LoanRepository {
     _controller.add(List.unmodifiable(_cache));
   }
 
-  /// Recarrega o cache a partir do StorageService e notifica os streams SSOT.
+  // Recarrega os dados salvos localmente
   Future<void> reload() async {
     _initialized = false;
     await _ensureInitialized();

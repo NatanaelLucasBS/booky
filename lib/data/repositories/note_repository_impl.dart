@@ -3,7 +3,7 @@ import '../../domain/models/note_model.dart';
 import '../../domain/repositories/note_repository.dart';
 import '../services/storage_service.dart';
 
-/// Implementação da Fonte Única de Verdade (SSOT) para Notas, Citações e Resenhas.
+// Implementação do repositório de notas, citações e resenhas
 class NoteRepositoryImpl implements NoteRepository {
   static const String _collection = 'notes';
   final StorageService _storage;
@@ -21,7 +21,7 @@ class NoteRepositoryImpl implements NoteRepository {
     _controller.add(List.unmodifiable(_cache));
   }
 
-  /// Recarrega o cache a partir do StorageService e notifica os streams SSOT.
+  // Recarrega os dados salvos localmente
   Future<void> reload() async {
     _initialized = false;
     await _ensureInitialized();

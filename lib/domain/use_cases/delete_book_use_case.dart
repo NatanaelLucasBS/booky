@@ -5,7 +5,7 @@ import '../repositories/note_repository.dart';
 import '../repositories/session_repository.dart';
 
 /// Caso de Uso para excluir um livro e seus registros dependentes em cascata
-/// sem acoplar repositórios entre si (Slide 23 da Aula 24).
+/// sem acoplar repositórios entre si.
 class DeleteBookUseCase {
   final BookRepository _bookRepository;
   final NoteRepository _noteRepository;

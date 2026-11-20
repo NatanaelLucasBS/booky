@@ -1,6 +1,6 @@
 import '../models/reading_session_model.dart';
 
-/// Contrato canônico do Repositório de Sessões de Leitura (SSOT).
+// Repositório de sessões de leitura
 abstract interface class SessionRepository {
   Stream<List<ReadingSessionModel>> watchSessions();
   Stream<List<ReadingSessionModel>> watchSessionsByBook(String bookId);

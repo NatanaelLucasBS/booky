@@ -9,9 +9,7 @@ import '../../../../domain/repositories/session_repository.dart';
 import '../../../../domain/use_cases/save_reading_session_use_case.dart';
 import '../viewmodels/tracker_viewmodel.dart';
 
-/// Tela 06: Rastreador de Leitura (ISSUE-C06)
-/// Cronômetro ativo, rastreamento de páginas, velocidade média,
-/// estimativa de conclusão e sincronização com histórico local.
+// Tela do rastreador de leitura
 class ReadingTrackerScreen extends StatelessWidget {
   final String? bookId;
 
@@ -155,7 +153,7 @@ class _ReadingTrackerView extends StatelessWidget {
 
                     const SizedBox(height: 36),
 
-                    // Timer Display Gigante
+                    // Cronômetro
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

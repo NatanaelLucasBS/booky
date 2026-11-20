@@ -12,8 +12,7 @@ import '../../domain/models/book_model.dart';
 
 export '../../domain/models/enums.dart' show ExportScope, ExportFormat;
 
-/// Serviço stateless responsável pela geração de relatórios PDF, planilhas CSV
-/// e acionamento do compartilhamento nativo via share_plus (Slide 25 da Aula 24).
+// Serviço de exportação de relatórios em PDF e CSV
 class ExportService {
   const ExportService();
 

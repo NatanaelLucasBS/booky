@@ -60,11 +60,7 @@ class BookApiException implements Exception {
   String toString() => message;
 }
 
-/// Serviço stateless de consulta exclusiva à Open Library API (Slide 25 da Aula 24):
-/// 1. Open Library Books API (/api/books) por ISBN principal e equivalente (ISBN-10 <-> ISBN-13)
-/// 2. Open Library Edition & Works API (/isbn/{isbn}.json + /works/{id}.json) para sinopse e páginas
-/// 3. Open Library Search API (/search.json) por ISBN e por Título + Autor (mediana de páginas e cover_i)
-/// 4. Open Library Covers API direta por ISBN
+// Serviço de busca de livros na API da Open Library
 class BookApiService {
   static const Map<String, String> _jsonHeaders = {
     'Accept': 'application/json',

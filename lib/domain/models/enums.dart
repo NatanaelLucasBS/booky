@@ -1,4 +1,4 @@
-/// Status de leitura oficial do Tema 6 (4 opções mutuamente exclusivas).
+// Status de leitura do livro
 enum BookStatus {
   wantToRead,
   reading,
@@ -20,7 +20,7 @@ enum BookStatus {
   }
 }
 
-/// Formato do livro (Acervo físico ou digital conforme Tema 6).
+// Formato do livro (físico ou digital)
 enum BookFormat {
   physical,
   digital;
@@ -38,7 +38,7 @@ enum BookFormat {
   }
 }
 
-/// Tipos de anotação na ficha do livro.
+// Tipos de registro no diário do livro
 enum NoteType {
   note,
   quote,
@@ -58,7 +58,7 @@ enum NoteType {
   }
 }
 
-/// Escopo de exportação do acervo (Tema 6 - RF7).
+// Escopo de exportação dos livros
 enum ExportScope {
   fullCatalog,
   wishlist;
@@ -69,7 +69,7 @@ enum ExportScope {
       };
 }
 
-/// Formato de arquivo para exportação (Tema 6 - RF7).
+// Formato de arquivo para exportação
 enum ExportFormat {
   pdf,
   csv;

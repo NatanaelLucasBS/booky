@@ -17,8 +17,7 @@ import '../../../../domain/use_cases/delete_book_use_case.dart';
 import '../../../../domain/use_cases/register_loan_use_case.dart';
 import '../../../../domain/use_cases/return_loan_use_case.dart';
 
-/// ViewModel para a tela de Detalhes do Livro, Empréstimos e Diário com OCR.
-/// Relação 1:1 com BookDetailsScreen (Slide 15 da Aula 24).
+// ViewModel da tela de detalhes do livro
 class BookDetailsViewModel extends ChangeNotifier {
   final String bookId;
   final BookRepository _bookRepository;

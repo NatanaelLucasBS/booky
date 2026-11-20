@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:booky/domain/models/loan_model.dart';
 
 void main() {
-  group('LoanModel.isOverdue — Regras de Atraso (RF5)', () {
+  group('LoanModel.isOverdue - Verificação de atraso', () {
     test('retorna false quando empréstimo está no prazo futuro', () {
       final now = DateTime.now();
       final loan = LoanModel(

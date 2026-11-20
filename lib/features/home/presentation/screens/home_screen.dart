@@ -14,9 +14,7 @@ import '../../../../domain/use_cases/get_dashboard_stats_use_case.dart';
 import '../viewmodels/home_viewmodel.dart';
 import '../widgets/reading_charts_section.dart';
 
-/// Tela 02: Início / Dashboard (ISSUE-C07)
-/// Visão geral das leituras do usuário, estatísticas de progresso,
-/// gráfico fl_chart e atalho direto para a leitura ativa.
+// Tela inicial e dashboard de leitura
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -113,7 +111,7 @@ class _HomeView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Saudação Editorial
+                  // Cabeçalho da tela inicial
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -308,7 +306,7 @@ class _HomeView extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Capa com cantoneira editorial Stitch
+              // Capa do livro
               GestureDetector(
                 onTap: () => Navigator.of(context).pushNamed(
                   AppRoutes.bookDetails,
@@ -344,7 +342,7 @@ class _HomeView extends StatelessWidget {
                         )
                       else
                         _buildCoverPlaceholder(book, theme),
-                      // Fita marcadora Stitch
+                      // Marcador de página
                       Positioned(
                         top: 0,
                         right: 8,

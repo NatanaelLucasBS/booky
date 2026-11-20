@@ -18,9 +18,7 @@ import '../viewmodels/book_details_viewmodel.dart';
 import '../widgets/loan_dialog.dart';
 import '../widgets/note_editor_dialog.dart';
 
-/// Tela 05: Detalhes do Livro
-/// Ficha catalográfica completa, controle de empréstimos, diário de leitura
-/// com 3 abas (Anotações, Citações com OCR e Resenha) e atalho para o rastreador.
+// Tela de detalhes do livro
 class BookDetailsScreen extends StatelessWidget {
   final String? bookId;
 
@@ -391,7 +389,7 @@ class _BookDetailsContentState extends State<_BookDetailsContent> {
               const SizedBox(height: 12),
             ],
 
-            // Diário de Leitura com 3 Abas Editoriais
+            // Diário de leitura
             _buildDiarySection(context, vm, theme, isDark),
           ],
         ),

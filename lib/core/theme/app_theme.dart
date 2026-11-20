@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
-/// Configuração do Design System e Temas (Light e Dark) do BOOKY.
-/// Utiliza exclusivamente a paleta de 5 tons e estética editorial.
+// Configuração dos temas claro e escuro
 abstract final class AppTheme {
   static const List<String> serifFontFamilyFallback = ['Georgia', 'Times New Roman', 'serif'];
   static const List<String> sansFontFamilyFallback = ['Helvetica Neue', 'Arial', 'sans-serif'];
 
-  // ==========================================
-  // TEMA CLARO (LIGHT THEME)
-  // ==========================================
+  // Tema claro
   static ThemeData get lightTheme {
     const colorScheme = ColorScheme(
       brightness: Brightness.light,
@@ -42,9 +39,8 @@ abstract final class AppTheme {
       dividerColor: AppColors.beige,
       splashFactory: InkRipple.splashFactory,
 
-      // Tipografia Editorial
+      // Tipografia
       textTheme: const TextTheme(
-        // Serif para Títulos e Destaques
         displayLarge: TextStyle(
           fontFamilyFallback: serifFontFamilyFallback,
           fontSize: 40,
@@ -134,7 +130,7 @@ abstract final class AppTheme {
         ),
       ),
 
-      // AppBar Editorial
+      // AppBar
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.lightCream,
         foregroundColor: AppColors.darkBrown,
@@ -153,7 +149,7 @@ abstract final class AppTheme {
         ),
       ),
 
-      // Material 3 NavigationBar (Aula 16)
+      // Barra de navegação inferior
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.lightCream,
         indicatorColor: AppColors.beige.withValues(alpha: 0.45),
@@ -260,9 +256,7 @@ abstract final class AppTheme {
     );
   }
 
-  // ==========================================
-  // TEMA ESCURO (DARK THEME)
-  // ==========================================
+  // Tema escuro
   static ThemeData get darkTheme {
     const colorScheme = ColorScheme(
       brightness: Brightness.dark,
@@ -295,7 +289,7 @@ abstract final class AppTheme {
       dividerColor: AppColors.woodBrown,
       splashFactory: InkRipple.splashFactory,
 
-      // Tipografia Editorial Dark
+      // Tipografia do tema escuro
       textTheme: const TextTheme(
         displayLarge: TextStyle(
           fontFamilyFallback: serifFontFamilyFallback,
@@ -402,7 +396,7 @@ abstract final class AppTheme {
         ),
       ),
 
-      // Material 3 NavigationBar (Aula 16)
+      // Barra de navegação inferior
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.darkBrown,
         indicatorColor: AppColors.woodBrown,

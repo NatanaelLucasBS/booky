@@ -3,7 +3,7 @@ import '../../domain/models/reading_session_model.dart';
 import '../../domain/repositories/session_repository.dart';
 import '../services/storage_service.dart';
 
-/// Implementação da Fonte Única de Verdade (SSOT) para Sessões de Leitura.
+// Implementação do repositório de sessões de leitura
 class SessionRepositoryImpl implements SessionRepository {
   static const String _collection = 'sessions';
   final StorageService _storage;
@@ -21,7 +21,7 @@ class SessionRepositoryImpl implements SessionRepository {
     _controller.add(List.unmodifiable(_cache));
   }
 
-  /// Recarrega o cache a partir do StorageService e notifica os streams SSOT.
+  // Recarrega os dados salvos localmente
   Future<void> reload() async {
     _initialized = false;
     await _ensureInitialized();

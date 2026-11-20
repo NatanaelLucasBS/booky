@@ -8,8 +8,7 @@ import '../../../../domain/repositories/book_repository.dart';
 import '../../../../domain/repositories/session_repository.dart';
 import '../../../../domain/use_cases/save_reading_session_use_case.dart';
 
-/// ViewModel para a tela de Rastreamento de Leitura e Cronômetro (relação 1:1 com ReadingTrackerScreen).
-/// Slide 15 e 18 da Aula 24 (Arquitetura Flutter).
+// ViewModel da tela do rastreador de leitura
 class TrackerViewModel extends ChangeNotifier with WidgetsBindingObserver {
   final BookRepository _bookRepository;
   final SessionRepository _sessionRepository;

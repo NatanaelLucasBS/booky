@@ -1,6 +1,6 @@
 import '../models/book_model.dart';
 
-/// Contrato canônico do Repositório de Livros (SSOT).
+// Repositório de livros
 abstract interface class BookRepository {
   Stream<List<BookModel>> watchBooks();
   Stream<BookModel?> watchBookById(String bookId);

@@ -29,14 +29,14 @@ import '../../domain/use_cases/return_loan_use_case.dart';
 import '../../domain/use_cases/save_reading_session_use_case.dart';
 import '../theme/theme_controller.dart';
 
-/// Árvore de Injeção de Dependências no padrão do Prof. Taniro (`todo_app_arch`).
+/// Configuração dos providers da aplicação.
 class ConfigureProviders {
   final List<SingleChildWidget> providers;
 
   ConfigureProviders({required this.providers});
 
   static Future<ConfigureProviders> createDependencyTree() async {
-    // 1. Serviços Stateless (com fallback seguro em memória quando executado no Chrome/Web)
+    // Serviços
     final StorageService storageService =
         kIsWeb ? InMemoryStorageService() : LocalJsonStorageService();
     await storageService.init();
@@ -48,7 +48,7 @@ class ConfigureProviders {
     const exportService = ExportService();
     final backupSyncService = BackupSyncService(storageService);
 
-    // 2. Repositórios Reativos SSOT (Single Source of Truth)
+    // Repositórios
     final bookRepository = BookRepositoryImpl(storageService);
     final shelfRepository = ShelfRepositoryImpl(storageService);
     final sessionRepository = SessionRepositoryImpl(storageService);
@@ -56,7 +56,7 @@ class ConfigureProviders {
     final loanRepository = LoanRepositoryImpl(storageService);
     final settingsRepository = SettingsRepositoryImpl(storageService);
 
-    // 3. Casos de Uso (Orquestradores de regras de negócio entre repositórios)
+    // Casos de uso
     final saveReadingSessionUseCase = SaveReadingSessionUseCase(
       bookRepository: bookRepository,
       sessionRepository: sessionRepository,
@@ -117,7 +117,7 @@ class ConfigureProviders {
         Provider<ExportService>.value(value: exportService),
         Provider<BackupSyncService>.value(value: backupSyncService),
 
-        // Repositories (SSOT)
+        // Repositórios
         Provider<BookRepository>.value(value: bookRepository),
         Provider<ShelfRepository>.value(value: shelfRepository),
         Provider<SessionRepository>.value(value: sessionRepository),

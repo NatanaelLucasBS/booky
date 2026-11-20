@@ -1,6 +1,6 @@
 import '../models/shelf_model.dart';
 
-/// Contrato canônico do Repositório de Estantes Temáticas (SSOT).
+// Repositório de estantes temáticas
 abstract interface class ShelfRepository {
   Stream<List<ShelfModel>> watchShelves();
   Future<List<ShelfModel>> getShelves();

@@ -6,7 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../domain/use_cases/get_dashboard_stats_use_case.dart';
 import '../viewmodels/home_viewmodel.dart';
 
-/// Seção com Gráfico Editorial de Leitura (ISSUE-C07) usando fl_chart.
+// Seção do gráfico de leitura mensal
 class ReadingChartsSection extends StatelessWidget {
   final List<MonthlyReadingStat> stats;
   final ChartMetric selectedMetric;
@@ -56,7 +56,7 @@ class ReadingChartsSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              // Segmented Control Editorial Stitch
+              // Seletor de métrica do gráfico
               Container(
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.darkBrown : AppColors.beige.withValues(alpha: 0.3),
